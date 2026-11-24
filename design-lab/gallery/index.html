@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PointHub design lab</title>
+  <style>
+    :root { color-scheme: light dark; --bg: #f4f4f6; --panel: #fff; --text: #17171c; --muted: #6b6b76; --line: #dcdce3; --accent: #4f46e5; }
+    @media (prefers-color-scheme: dark) { :root { --bg: #111114; --panel: #1b1b21; --text: #f1f1f4; --muted: #9a9aa6; --line: #2e2e37; --accent: #8b85ff; } }
+    * { box-sizing: border-box; }
+    body { margin: 0; height: 100vh; display: grid; grid-template-rows: auto 1fr; background: var(--bg); color: var(--text);
+      font: 14px/1.4 "Segoe UI", "Noto Sans TC", "Microsoft JhengHei", "Noto Sans JP", "Yu Gothic UI", system-ui, sans-serif; }
+    header { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center; padding: 10px 14px; background: var(--panel); border-bottom: 1px solid var(--line); }
+    h1 { font-size: 15px; margin: 0 6px 0 0; white-space: nowrap; }
+    .group { display: flex; align-items: center; gap: 6px; }
+    .group > span { color: var(--muted); font-size: 12px; }
+    .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+    .seg button { border: 0; background: transparent; color: var(--text); padding: 6px 10px; font: inherit; cursor: pointer; }
+    .seg button + button { border-left: 1px solid var(--line); }
+    .seg button[aria-pressed="true"] { background: var(--accent); color: #fff; }
+    .seg button:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    #designs button { display: grid; text-align: left; line-height: 1.2; }
+    #designs small { opacity: .75; font-size: 11px; }
+    main { min-height: 0; display: grid; grid-template-rows: auto 1fr; }
+    #about { padding: 8px 14px; color: var(--muted); display: flex; gap: 12px; align-items: baseline; flex-wrap: wrap; }
+    #about strong { color: var(--text); }
+    #about a { color: var(--accent); margin-left: auto; }
+    #stage { min-height: 0; display: grid; place-items: center; padding: 0 14px 14px; }
+    iframe { border: 1px solid var(--line); border-radius: 12px; background: #fff; width: 100%; height: 100%; transition: width .35s ease, height .35s ease; }
+    iframe.phone { width: 390px; height: min(100%, 844px); border-radius: 28px; }
+    iframe.tablet { width: 834px; }
+    @media (prefers-reduced-motion: reduce) { iframe { transition: none; } }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>PointHub design lab</h1>
+    <div class="group"><div class="seg" id="designs" role="group" aria-label="Design"></div></div>
+    <div class="group"><span>View</span><div class="seg" data-key="view" role="group" aria-label="View"></div></div>
+    <div class="group"><span>Language</span><div class="seg" data-key="locale" role="group" aria-label="Language"></div></div>
+    <div class="group"><span>Season</span><div class="seg" data-key="season" role="group" aria-label="Season"></div></div>
+    <div class="group"><span>Scheme</span><div class="seg" data-key="scheme" role="group" aria-label="Colour scheme"></div></div>
+    <div class="group"><span>Size</span><div class="seg" data-key="size" role="group" aria-label="Viewport size"></div></div>
+  </header>
+  <main>
+    <div id="about"></div>
+    <div id="stage"><iframe id="frame" title="Design preview"></iframe></div>
+  </main>
+  <script>
+    // DESIGNS is replaced by build-all.mjs with the contents of designs.json (only designs that were built).
+    const DESIGNS = /*DESIGNS*/[];
+    const options = {
+      view: [['employee', 'Employee'], ['admin', 'Admin']],
+      locale: [['en', 'English'], ['ja', '日本語'], ['zh-Hant', '繁體中文']],
+      season: [['default', 'Standard'], ['lunarNewYear', 'Lunar New Year'], ['midAutumn', 'Mid-Autumn'], ['winter', 'Winter']],
+      scheme: [['light', 'Light'], ['dark', 'Dark']],
+      size: [['fit', 'Desktop'], ['tablet', 'Tablet'], ['phone', 'Phone']],
+    };
+    const state = { design: DESIGNS[0]?.slug, view: 'employee', locale: 'en', season: 'default', scheme: 'light', size: 'fit' };
+    const frame = document.getElementById('frame');
+    const designHash = () => `#/${state.view}?locale=${encodeURIComponent(state.locale)}&season=${state.season}&scheme=${state.scheme}`;
+
+    function button(label, pressed, onClick, sub) {
+      const el = document.createElement('button');
+      el.type = 'button';
+      el.setAttribute('aria-pressed', String(pressed));
+      el.append(label);
+      if (sub) { const small = document.createElement('small'); small.textContent = sub; el.append(small); }
+      el.addEventListener('click', onClick);
+      return el;
+    }
+
+    function render(reload) {
+      const designs = document.getElementById('designs');
+      designs.replaceChildren(...DESIGNS.map(d => button(d.name, d.slug === state.design, () => { state.design = d.slug; render(true); }, d.kit)));
+      for (const seg of document.querySelectorAll('.seg[data-key]')) {
+        const key = seg.dataset.key;
+        seg.replaceChildren(...options[key].map(([value, label]) => button(label, state[key] === value, () => { state[key] = value; render(false); })));
+      }
+      const design = DESIGNS.find(d => d.slug === state.design);
+      const about = document.getElementById('about');
+      about.replaceChildren();
+      if (!design) { about.textContent = 'No designs have been built yet. Run "npm run build" in design-lab.'; return; }
+      const name = document.createElement('strong'); name.textContent = `${design.name} · ${design.kit}`;
+      const link = document.createElement('a'); link.href = `./${design.slug}/${designHash()}`; link.target = '_blank'; link.rel = 'noopener'; link.textContent = 'Open in its own tab';
+      about.append(name, design.direction, link);
+      frame.className = state.size === 'fit' ? '' : state.size;
+      const url = `./${design.slug}/index.html${designHash()}`;
+      // Changing only the hash keeps the design mounted, so its own transitions (season, language, view) can be judged.
+      if (reload || !frame.contentWindow || frame.dataset.slug !== design.slug) { frame.dataset.slug = design.slug; frame.src = url; }
+      else frame.contentWindow.location.hash = designHash().slice(1);
+    }
+    render(true);
+  </script>
+</body>
+</html>

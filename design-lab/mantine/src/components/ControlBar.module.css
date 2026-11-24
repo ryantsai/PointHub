@@ -1,0 +1,115 @@
+.bar {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  padding: 0.625rem 0.75rem 0;
+
+  @media (min-width: $mantine-breakpoint-md) {
+    padding: 0.875rem 1.5rem 0;
+  }
+}
+
+.inner {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  grid-template-areas:
+    'brand view scheme'
+    'language season season';
+  align-items: center;
+  gap: 0.5rem 0.625rem;
+  max-width: 90rem;
+  margin: 0 auto;
+  padding: 0.5rem 0.625rem;
+  border-radius: 1.5rem;
+  border: 1px solid var(--mx-border);
+  background: color-mix(in srgb, var(--mx-surface) 82%, transparent);
+  backdrop-filter: saturate(1.5) blur(16px);
+  -webkit-backdrop-filter: saturate(1.5) blur(16px);
+  box-shadow: var(--mx-shadow-card);
+
+  @media (min-width: $mantine-breakpoint-md) {
+    grid-template-columns: auto auto 1fr auto auto auto;
+    grid-template-areas: 'brand view . language season scheme';
+    gap: 0.75rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 999px;
+  }
+}
+
+.brand {
+  grid-area: brand;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.mark {
+  flex: none;
+  filter: drop-shadow(0 4px 8px var(--mx-glow));
+}
+
+.name {
+  font-weight: 800;
+  font-size: 1.0625rem;
+  letter-spacing: -0.01em;
+  display: none;
+
+  @media (min-width: 26em) {
+    display: inline;
+  }
+}
+
+.view {
+  grid-area: view;
+  justify-self: start;
+}
+
+.language {
+  grid-area: language;
+  justify-self: start;
+}
+
+.season {
+  grid-area: season;
+  justify-self: end;
+}
+
+.scheme {
+  grid-area: scheme;
+  justify-self: end;
+}
+
+.schemeIcon {
+  display: grid;
+  place-items: center;
+}
+
+.seasonOption {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.seasonEmoji {
+  font-size: 1.0625rem;
+  line-height: 1;
+}
+
+/* Names stay available to assistive tech; they show next to the emoji only when there is room. */
+.seasonName {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+
+  @media (min-width: $mantine-breakpoint-xl) {
+    position: static;
+    width: auto;
+    height: auto;
+    overflow: visible;
+    clip-path: none;
+  }
+}

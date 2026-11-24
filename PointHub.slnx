@@ -1,0 +1,13 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/PointHub.Api/PointHub.Api.csproj" />
+    <Project Path="src/PointHub.Domain/PointHub.Domain.csproj" />
+    <Project Path="src/PointHub.Infrastructure/PointHub.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/PointHub.Tests/PointHub.Tests.csproj" />
+  </Folder>
+  <Folder Name="/tools/">
+    <Project Path="tools/PointHub.CardBridge/PointHub.CardBridge.csproj" />
+  </Folder>
+</Solution>

@@ -1,0 +1,68 @@
+/* Matsuri – global layer. Component styles live in CSS modules next to the components. */
+
+:root {
+  --mx-radius-card: 1.5rem;
+  --mx-radius-hero: 2rem;
+  --mx-radius-tile: 1rem;
+  --mx-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --mx-shadow-card: 0 1px 2px var(--mx-shadow), 0 14px 32px -18px var(--mx-shadow);
+  --mx-shadow-lift: 0 2px 4px var(--mx-shadow), 0 26px 44px -20px var(--mx-shadow);
+  --mx-hero-gradient: linear-gradient(135deg, var(--mx-g1) 0%, var(--mx-g2) 100%);
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  min-height: 100dvh;
+  overflow-x: hidden;
+  background: var(--mx-bg);
+  color: var(--mx-text);
+  font-feature-settings: 'palt' 0;
+  line-break: strict;
+}
+
+/* Soft seasonal washes behind everything; colours tween with the season. */
+.mx-wash {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(70vmax 46vmax at 0% -8%, var(--mx-wash-1), transparent 70%), radial-gradient(60vmax 44vmax at 104% 4%, var(--mx-wash-2), transparent 70%),
+    radial-gradient(70vmax 40vmax at 50% 112%, var(--mx-wash-1), transparent 72%);
+}
+
+.mx-num {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum';
+}
+
+/* Pressed state for every Mantine control (theme.activeClassName). */
+.mx-press {
+  transition: transform 140ms var(--mx-ease-out);
+}
+
+.mx-press:active {
+  transform: scale(0.96);
+}
+
+::selection {
+  background: var(--mantine-color-brand-2);
+  color: var(--mantine-color-brand-9);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}

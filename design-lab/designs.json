@@ -1,0 +1,8 @@
+[
+  { "slug": "mantine", "name": "Matsuri", "kit": "Mantine", "port": 5201, "direction": "Festive and warm: seasonal gradients, soft cards, playful ambient particles." },
+  { "slug": "heroui", "name": "Aurora", "kit": "HeroUI", "port": 5202, "direction": "Glass and light: translucent layers, blur, large radii, fluid spring motion." },
+  { "slug": "shadcn", "name": "Ink", "kit": "shadcn/ui", "port": 5203, "direction": "Editorial minimal: near-monochrome, hairline borders, bento grid, one accent." },
+  { "slug": "antd", "name": "Console", "kit": "Ant Design", "port": 5204, "direction": "Data-first enterprise: dense, precise, table-centric, familiar to back-office users." },
+  { "slug": "mui", "name": "Tonal", "kit": "MUI", "port": 5205, "direction": "Material expressive: tonal colour surfaces, bold shapes, emphasised motion." },
+  { "slug": "chakra", "name": "Arcade", "kit": "Chakra UI", "port": 5206, "direction": "Gamified and energetic: levels, progress rings, badges, bouncy rewards." }
+]

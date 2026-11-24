@@ -1,0 +1,122 @@
+/* Confetti */
+.burst {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.piece {
+  position: absolute;
+  left: 0;
+  top: 0;
+  will-change: transform, opacity;
+}
+
+/* Ambient particles ---------------------------------------------------------------------------- */
+.layer {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  container-type: size;
+}
+
+.layer[data-fixed] {
+  position: fixed;
+  z-index: 0;
+}
+
+/* In the wide hero the text sits on the left, so the ambience keeps to the right half. */
+.layer[data-on-hero] {
+  z-index: -1;
+
+  @media (min-width: $mantine-breakpoint-md) {
+    left: 46%;
+  }
+}
+
+.layer[data-paused] * {
+  animation-play-state: paused !important;
+}
+
+.particle {
+  position: absolute;
+  top: 0;
+  left: var(--x);
+  will-change: transform;
+  animation: mx-fall var(--dur) linear var(--delay) infinite both;
+}
+
+.particle[data-travel='rise'] {
+  animation-name: mx-rise;
+}
+
+.sway {
+  display: block;
+  animation: mx-sway var(--sway-dur) ease-in-out var(--delay) infinite alternate;
+}
+
+.shape {
+  display: block;
+  width: var(--size);
+  height: auto;
+  opacity: var(--alpha);
+}
+
+.snow {
+  display: block;
+  width: var(--size);
+  height: var(--size);
+  border-radius: 50%;
+  opacity: var(--alpha);
+  background: radial-gradient(circle at 35% 35%, #fff 0%, var(--mx-particle) 55%, transparent 72%);
+}
+
+.layer[data-on-hero] .snow {
+  background: radial-gradient(circle at 35% 35%, #fff 0%, rgba(255, 255, 255, 0.7) 50%, transparent 72%);
+}
+
+.spin {
+  display: block;
+  animation: mx-tumble var(--spin-dur) linear var(--delay) infinite;
+}
+
+@keyframes mx-fall {
+  from {
+    transform: translate3d(0, -14cqh, 0);
+  }
+  to {
+    transform: translate3d(var(--drift), 114cqh, 0);
+  }
+}
+
+@keyframes mx-rise {
+  from {
+    transform: translate3d(0, 114cqh, 0);
+  }
+  to {
+    transform: translate3d(var(--drift), -30cqh, 0);
+  }
+}
+
+@keyframes mx-sway {
+  from {
+    transform: translate3d(calc(var(--sway) * -1), 0, 0) rotate(calc(var(--tilt) * -1));
+  }
+  to {
+    transform: translate3d(var(--sway), 0, 0) rotate(var(--tilt));
+  }
+}
+
+@keyframes mx-tumble {
+  from {
+    transform: rotate3d(0.4, 1, 0.2, 0deg);
+  }
+  to {
+    transform: rotate3d(0.4, 1, 0.2, 360deg);
+  }
+}

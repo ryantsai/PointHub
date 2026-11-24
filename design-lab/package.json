@@ -1,0 +1,11 @@
+{
+  "name": "pointhub-design-lab",
+  "private": true,
+  "type": "module",
+  "description": "Six alternative PointHub designs, one per UI kit, for choosing the product's look. See README.md.",
+  "scripts": {
+    "build": "node build-all.mjs",
+    "build:clean": "node build-all.mjs --install",
+    "serve": "node serve.mjs 5200"
+  }
+}

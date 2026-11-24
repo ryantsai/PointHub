@@ -1,0 +1,29 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "api",
+      "runtimeExecutable": "dotnet",
+      "runtimeArgs": ["run", "--project", "src/PointHub.Api", "--launch-profile", "API only"],
+      "port": 5180
+    },
+    {
+      "name": "web",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "web", "run", "dev"],
+      "port": 5173
+    },
+    {
+      "name": "design-lab",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["design-lab/serve.mjs", "5200"],
+      "port": 5200
+    },
+    {
+      "name": "card-bridge",
+      "runtimeExecutable": "dotnet",
+      "runtimeArgs": ["run", "--project", "tools/PointHub.CardBridge"],
+      "port": 47615
+    }
+  ]
+}

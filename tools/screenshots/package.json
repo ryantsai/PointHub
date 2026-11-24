@@ -1,0 +1,12 @@
+{
+  "name": "pointhub-screenshots",
+  "private": true,
+  "type": "module",
+  "description": "Captures the screenshots used by the proposal page (web/public/proposal). Needs the API and the web dev server running with sample data.",
+  "scripts": {
+    "capture": "node capture.mjs"
+  },
+  "devDependencies": {
+    "playwright-core": "^1.65.1"
+  }
+}

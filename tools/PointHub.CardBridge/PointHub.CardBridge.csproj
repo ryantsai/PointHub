@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <!-- A small console program for event-station PCs; see README.md in this folder. -->
+    <AssemblyName>PointHub.CardBridge</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="PCSC" />
+  </ItemGroup>
+
+</Project>

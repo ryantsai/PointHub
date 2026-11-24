@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PointHub 設計提案</title>
+  <link rel="stylesheet" href="proposal.css">
+</head>
+<body>
+  <a class="skip" href="#main">跳到主要內容</a>
+  <header class="top">
+    <div class="top-inner">
+      <strong class="brand">PointHub <span>設計提案</span></strong>
+      <span class="status" id="doc-status">討論用草稿</span>
+      <button type="button" class="btn ghost" id="open-notes" aria-controls="notes-panel">筆記 <span class="count" id="notes-count">0</span></button>
+    </div>
+  </header>
+
+  <div class="layout">
+    <nav class="toc" aria-label="章節"><ol id="toc"></ol></nav>
+
+    <main id="main">
+      <section id="summary" data-title="摘要">
+        <h1>員工活動點數集中管理平台</h1>
+        <p class="lead">員工參加公司活動即可累積點數，並用點數兌換禮品。活動管理員以 QR Code 或員工證感應發放點數，禮品管理員負責禮品目錄與發放，系統管理員確保每一筆帳都正確。本頁說明目前已完成的內容、畫面設計、各角色可以做的事，以及尚待決定的事項。</p>
+        <ul class="facts">
+          <li><b>網頁應用程式</b>，支援手機與電腦，提供英文、日文、繁體中文</li>
+          <li><b>登入</b>使用公司 Microsoft 帳號（Entra ID）</li>
+          <li><b>報到方式</b>：QR Code 或連結、員工證（NFC／MIFARE）感應、人工輸入</li>
+          <li><b>節慶主題</b>依台灣節慶行事曆自動切換</li>
+          <li><b>電子郵件通知</b>透過公司 SMTP 伺服器寄送，範本可自行編輯</li>
+          <li><b>API</b> 以金鑰提供其他系統串接（人資系統、員工餐廳機台、問卷工具）</li>
+          <li><b>部署環境</b>：公司內部 IIS、.NET 10、SQL Server</li>
+        </ul>
+        <p class="hint">討論時可在任一章節按<b>新增筆記</b>。筆記只會存在這個瀏覽器（本機儲存空間），可從「筆記」面板匯出給開發人員。</p>
+      </section>
+
+      <section id="design" data-title="畫面設計">
+        <h2>畫面設計</h2>
+        <p>選定的設計方向是 <b>Arcade</b>：讓累積點數帶有一點遊戲感。點數餘額以等級圓環呈現，會隨著接近下一份好禮逐漸填滿；活動與禮品是像徽章一樣的卡片；報到成功或兌換禮品時會有小小的慶祝動畫。管理介面延續同樣的風格，但較為沉穩——它們首先是工作用的工具。</p>
+        <div class="grid two">
+          <figure class="shot" data-shot="dashboard" data-caption="員工首頁：等級圓環、報到中的活動、近期點數紀錄"></figure>
+          <figure class="shot phone" data-shot="dashboard-mobile" data-caption="同一個頁面在手機上的樣子"></figure>
+        </div>
+        <h3>標準配色</h3>
+        <p>平日使用公司的藍色與綠色。藍色為主色，綠色用於成功、進度與獎勵。下列色碼取自公開的商標圖檔，應以品牌規範的正式色碼取代（見待決事項<a href="#d-brand">品牌色</a>）。</p>
+        <div class="swatches">
+          <div class="swatch" style="--c:#199ECF"><span>藍</span><code>#199ECF</code></div>
+          <div class="swatch" style="--c:#75B42B"><span>綠</span><code>#75B42B</code></div>
+          <div class="swatch" style="--c:#54555A"><span>灰</span><code>#54555A</code></div>
+        </div>
+        <h3>節慶主題</h3>
+        <p>節慶期間網站會自動更換配色與裝飾。每個節慶都有專屬的像素風圖案與輕量的背景動畫。日期由系統逐年計算，農曆節日也包含在內，不需要有人維護時程表。系統管理員可以隨時略過某個節慶，或強制指定主題。</p>
+        <div class="themes" id="theme-gallery"></div>
+        <table class="plain" id="theme-table">
+          <caption>節慶與主題顯示期間</caption>
+          <thead><tr><th>節慶</th><th>日期</th><th>主題顯示期間</th><th>下一次（系統計算）</th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <h3>設計原則</h3>
+        <ul>
+          <li><b>動畫流暢且有目的。</b>數字會跳動累加、清單會滑動、頁面依序進場。裝置若設定「減少動態效果」，則改為簡短的淡入淡出。</li>
+          <li><b>全站三種語言，</b>包含管理員輸入的活動與禮品名稱（未填寫時以英文顯示）。</li>
+          <li><b>員工介面以手機優先，</b>管理介面以寬螢幕為主；支援淺色與深色。</li>
+          <li><b>清楚易讀。</b>每個主題的文字對比皆符合 WCAG AA，所有功能都能用鍵盤操作。</li>
+        </ul>
+      </section>
+
+      <section id="roles" data-title="角色權限">
+        <h2>各角色可以做什麼</h2>
+        <p>所有登入的人都是一般員工。系統管理員可以另外授予角色，一個人可以同時擁有多個角色。</p>
+        <div class="table-scroll">
+          <table class="matrix" id="role-matrix">
+            <thead><tr><th scope="col">功能</th><th scope="col">一般員工</th><th scope="col">活動管理員</th><th scope="col">禮品管理員</th><th scope="col">系統管理員</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <p class="hint">活動管理員只能看到自己負責的活動。另有唯讀的<b>稽核</b>角色（點數帳本、員工、稽核紀錄）——見待決事項<a href="#d-auditor">稽核角色</a>。</p>
+      </section>
+
+      <section id="employees" data-title="一般員工">
+        <h2>員工可以做什麼</h2>
+        <div class="feature">
+          <div>
+            <h3>查看自己的點數</h3>
+            <p>點數餘額、距離下一份好禮的進度、累計獲得與使用，以及每一筆異動與原因。報到中的活動會顯示自己是否已報到、是否已通過審核。</p>
+          </div>
+          <figure class="shot" data-shot="dashboard" data-caption="首頁"></figure>
+        </div>
+        <div class="feature">
+          <div>
+            <h3>活動報到</h3>
+            <p>用手機相機掃描活動的 QR Code（或開啟連結），必要時先登入，再按一個按鈕即可。活動若需審核，頁面會等待，並在活動管理員核准時顯示慶祝畫面。已登記員工證的人，在會場的讀卡機感應一下就完成。</p>
+          </div>
+          <figure class="shot phone" data-shot="checkin" data-caption="掃描 QR Code 後開啟的報到頁"></figure>
+        </div>
+        <div class="feature">
+          <div>
+            <h3>兌換禮品</h3>
+            <p>瀏覽附有圖片、所需點數與剩餘數量的禮品目錄。兌換時立即扣點並保留該項禮品；禮品發放後員工會收到電子郵件。每一筆申請都能在<i>我的兌換</i>中追蹤。</p>
+          </div>
+          <figure class="shot" data-shot="gifts" data-caption="禮品目錄"></figure>
+        </div>
+        <div class="grid two">
+          <figure class="shot" data-shot="claims" data-caption="我的兌換"></figure>
+          <figure class="shot" data-shot="login" data-caption="登入頁（開發環境為範例帳號，正式環境為公司帳號登入）"></figure>
+        </div>
+      </section>
+
+      <section id="event-admins" data-title="活動管理員">
+        <h2>活動管理員可以做什麼</h2>
+        <div class="feature">
+          <div>
+            <h3>建立活動並設定點數</h3>
+            <p>以三種語言填寫名稱與說明，設定時間、地點、每次出席的點數與人數上限（選填）。每個活動可以選擇報到的審核方式（逐筆人工審核、名單內自動核准、全部自動核准），以及使用哪一種 QR Code。</p>
+          </div>
+          <figure class="shot" data-shot="event-form" data-caption="活動表單"></figure>
+        </div>
+        <div class="feature">
+          <div>
+            <h3>用 QR Code 發放點數</h3>
+            <p><b>固定連結</b>：每個活動一個連結，適合印在海報上，搭配人工審核使用。<b>動態報到碼</b>：會場螢幕上的 QR Code 每 30 秒更換一次，轉傳給同事的照片很快就失效。另有適合投影機的全螢幕模式。</p>
+          </div>
+          <figure class="shot" data-shot="host-qr" data-caption="動態報到碼 與倒數"></figure>
+        </div>
+        <div class="feature">
+          <div>
+            <h3>審核報到</h3>
+            <p>待審核清單會即時更新。可以逐筆核准或退回、全部核准，或只核准名單內的人。現場報名的人會特別標示。</p>
+          </div>
+          <figure class="shot" data-shot="host-approvals" data-caption="審核"></figure>
+        </div>
+        <div class="feature">
+          <div>
+            <h3>刷卡站</h3>
+            <p>在入口放一台接上讀卡機的筆電：每感應一次就顯示姓名並立即發放點數。支援以鍵盤輸入方式運作的 USB 讀卡機；ACR122U 等 PC/SC 讀卡機則透過一支小型輔助程式連接。忘記帶員工證的人，可以改為輸入員工編號。</p>
+          </div>
+          <figure class="shot" data-shot="host-station" data-caption="感應後的刷卡站畫面"></figure>
+        </div>
+        <div class="feature">
+          <div>
+            <h3>參加名單</h3>
+            <p>匯入人資或報名表單匯出的 CSV。每一列都會與員工主檔比對：符合、查無此人、已離職或重複。之後若有新進員工加入，按<i>重新比對</i>即可，不需要重新上傳。</p>
+          </div>
+          <figure class="shot" data-shot="host-roster" data-caption="名單與比對結果"></figure>
+        </div>
+      </section>
+
+      <section id="gift-admins" data-title="禮品管理員">
+        <h2>禮品管理員可以做什麼</h2>
+        <div class="feature">
+          <div>
+            <h3>管理禮品目錄</h3>
+            <p>以三種語言填寫名稱與說明，設定所需點數、庫存、每人兌換上限（選填）與上下架。每項禮品可以有多張圖片：上傳的圖片都會自動縮放到同一個正方形框內，不必修圖，目錄看起來也整齊一致。庫存異動都會連同原因留下紀錄。</p>
+          </div>
+          <figure class="shot" data-shot="admin-gifts" data-caption="禮品編輯與圖片"></figure>
+        </div>
+        <div class="feature">
+          <div>
+            <h3>發放禮品並標記已發放</h3>
+            <p>每一筆兌換申請都會列在清單中，包含申請人、禮品與時間。禮品交給員工後，禮品管理員將它標記為<b>已發放</b>；清單會顯示由誰、在何時標記，員工也會收到電子郵件通知。標記錯誤可以復原；申請也可以取消，點數與庫存都會退回。</p>
+          </div>
+          <figure class="shot" data-shot="admin-claims" data-caption="兌換申請：待發放、已發放、已取消"></figure>
+        </div>
+      </section>
+
+      <section id="system-admins" data-title="系統管理員">
+        <h2>系統管理員可以做什麼</h2>
+        <div class="feature">
+          <div>
+            <h3>查看並更正每一筆點數</h3>
+            <p>點數帳本會列出每一筆異動。任何紀錄都不會被修改或刪除：錯誤是以<b>撤銷</b>（新增一筆相反的紀錄並連結到原紀錄）或附上原因的<b>調整</b>來更正，因此歷史紀錄永遠對得上，也看得出是誰做了什麼。</p>
+          </div>
+          <figure class="shot" data-shot="admin-ledger" data-caption="點數帳本：撤銷與調整"></figure>
+        </div>
+        <div class="feature">
+          <div>
+            <h3>人員、角色與員工證</h3>
+            <p>搜尋員工、查看餘額、授予或移除角色，並以感應方式登記員工證。</p>
+          </div>
+          <figure class="shot" data-shot="admin-employees" data-caption="員工、角色與卡片"></figure>
+        </div>
+        <div class="feature">
+          <div>
+            <h3>節慶主題</h3>
+            <p>主題預設依節慶行事曆切換。管理員可以查看接下來的節慶、略過個別節慶，或強制使用某個主題（例如公司週年慶），之後再切回行事曆。</p>
+          </div>
+          <figure class="shot" data-shot="admin-themes" data-caption="主題設定與即將到來的節慶"></figure>
+        </div>
+        <div class="feature">
+          <div>
+            <h3>電子郵件</h3>
+            <p>查看 SMTP 伺服器是否連線正常、寄送測試信、開啟或關閉各項通知，並以 <code>{{employeeName}}</code> 這類變數編輯各語言的主旨與內文。寄送紀錄會顯示已寄出與失敗的信件。</p>
+          </div>
+          <figure class="shot" data-shot="admin-email" data-caption="電子郵件範本"></figure>
+        </div>
+        <div class="grid two">
+          <figure class="shot" data-shot="admin-api-keys" data-caption="提供其他系統使用的 API 金鑰"></figure>
+          <figure class="shot" data-shot="admin-audit" data-caption="稽核紀錄"></figure>
+        </div>
+      </section>
+
+      <section id="workflows" data-title="作業流程">
+        <h2>作業流程</h2>
+        <p>每張圖由上往下閱讀。實線箭頭是動作，虛線箭頭是回應的結果。</p>
+        <div id="flows"></div>
+      </section>
+
+      <section id="tech" data-title="系統架構">
+        <h2>系統架構</h2>
+        <figure class="diagram">
+          <svg viewBox="0 0 860 330" role="img" aria-labelledby="arch-title arch-desc">
+            <title id="arch-title">系統概觀</title>
+            <desc id="arch-desc">瀏覽器連到 IIS 上的單一 PointHub 應用程式，應用程式使用 SQL Server、上傳資料夾與 SMTP 伺服器。其他系統以金鑰呼叫整合 API。讀卡機直接或透過本機的卡片橋接程式連到瀏覽器。登入透過 Microsoft Entra ID。</desc>
+            <defs><marker id="arch-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="dg-head"/></marker></defs>
+            <g class="dg-box"><rect x="20" y="20" width="190" height="60" rx="10"/><text x="115" y="46">員工的手機／電腦</text><text x="115" y="64" class="dg-sub">瀏覽器</text></g>
+            <g class="dg-box"><rect x="20" y="130" width="190" height="60" rx="10"/><text x="115" y="156">活動刷卡站電腦</text><text x="115" y="174" class="dg-sub">瀏覽器＋讀卡機</text></g>
+            <g class="dg-box"><rect x="20" y="240" width="190" height="60" rx="10"/><text x="115" y="266">其他系統</text><text x="115" y="284" class="dg-sub">人資、餐廳機台、問卷</text></g>
+            <g class="dg-box main"><rect x="330" y="95" width="210" height="130" rx="12"/><text x="435" y="130">IIS 上的 PointHub</text><text x="435" y="152" class="dg-sub">網頁＋API（.NET 10）</text><text x="435" y="176" class="dg-sub">點數帳本・活動・禮品</text><text x="435" y="196" class="dg-sub">郵件佇列・節慶行事曆</text></g>
+            <g class="dg-box"><rect x="660" y="20" width="180" height="50" rx="10"/><text x="750" y="50">Microsoft Entra ID</text></g>
+            <g class="dg-box"><rect x="660" y="100" width="180" height="50" rx="10"/><text x="750" y="130">SQL Server</text></g>
+            <g class="dg-box"><rect x="660" y="180" width="180" height="50" rx="10"/><text x="750" y="204">uploads/assets</text><text x="750" y="220" class="dg-sub">禮品圖片</text></g>
+            <g class="dg-box"><rect x="660" y="260" width="180" height="50" rx="10"/><text x="750" y="290">公司 SMTP 伺服器</text></g>
+            <g class="dg-line">
+              <path d="M210 50 L330 125" marker-end="url(#arch-arrow)"/><text x="244" y="96">HTTPS</text>
+              <path d="M210 160 L330 160" marker-end="url(#arch-arrow)"/><text x="270" y="152">HTTPS</text>
+              <path d="M210 270 L330 200" marker-end="url(#arch-arrow)"/><text x="296" y="252">API 金鑰</text>
+              <path d="M540 115 L660 50" marker-end="url(#arch-arrow)"/><text x="590" y="70">登入</text>
+              <path d="M540 145 L660 128" marker-end="url(#arch-arrow)"/>
+              <path d="M540 175 L660 203" marker-end="url(#arch-arrow)"/>
+              <path d="M540 205 L660 282" marker-end="url(#arch-arrow)"/><text x="590" y="262">郵件</text>
+            </g>
+          </svg>
+          <figcaption>只需部署一個應用程式。卡片橋接程式是安裝在使用 PC/SC 讀卡機的刷卡站電腦上的小型輔助程式；鍵盤輸入型讀卡機不需要安裝任何東西。</figcaption>
+        </figure>
+        <ul>
+          <li><b>點數是一本帳。</b>每一筆發放、兌換、調整與撤銷都是一列永不更動的紀錄。餘額由這本帳推算而來，並能防止同時發生的重複操作（重複掃描、最後一份禮品被兌換兩次）。</li>
+          <li><b>電子郵件不會遺失，也不會誤報。</b>信件與它所通知的異動一起儲存，再由背景程式寄出；郵件伺服器故障時會自動重試。</li>
+          <li><b>圖片一律重新編碼。</b>上傳的圖片由伺服器解碼後重新產生（統一尺寸、移除位置等資訊），並以隨機檔名存成一般檔案。</li>
+          <li><b>其他系統</b>各自取得權限受限的金鑰（讀取點數、增減點數、同步員工資料）。金鑰只儲存雜湊值，並可隨時撤銷。</li>
+          <li><b>員工證卡號</b>是識別碼，不是機密：感應一次代表「這張卡曾在這裡」，可信度與在名單上打勾相同。</li>
+        </ul>
+      </section>
+
+      <section id="decisions" data-title="待決事項">
+        <h2>待決事項</h2>
+        <p>討論時可以直接選擇方案或寫下結論。選擇的結果會存在這個瀏覽器，匯出時一併包含。</p>
+        <div class="decision-filter" role="group" aria-label="篩選待決事項">
+          <button type="button" class="chip on" data-filter="all">全部</button>
+          <button type="button" class="chip" data-filter="open">尚未決定</button>
+          <button type="button" class="chip" data-filter="decided">已在此決定</button>
+        </div>
+        <div id="decision-list"></div>
+      </section>
+
+      <section id="feedback" data-title="筆記">
+        <h2>筆記與意見</h2>
+        <p>本頁所有筆記，最新的在最上面。筆記存放在這個瀏覽器的本機儲存空間：不會傳送到任何地方，其他人也看不到，除非您匯出並分享檔案。</p>
+        <div class="note-tools">
+          <label>您的姓名 <input type="text" id="author" autocomplete="name" placeholder="記錄人"></label>
+          <button type="button" class="btn" id="export-md">複製為 Markdown</button>
+          <button type="button" class="btn" id="export-json">下載 JSON</button>
+          <label class="btn file">匯入 JSON<input type="file" id="import-json" accept="application/json" hidden></label>
+          <button type="button" class="btn danger" id="clear-all">全部清除</button>
+        </div>
+        <p class="live" id="note-status" role="status" aria-live="polite"></p>
+        <ul class="notes" id="all-notes"></ul>
+      </section>
+    </main>
+  </div>
+
+  <aside class="panel" id="notes-panel" aria-label="筆記" hidden>
+    <div class="panel-head"><strong>筆記</strong><button type="button" class="btn ghost" id="close-notes" aria-label="關閉筆記">關閉</button></div>
+    <ul class="notes" id="panel-notes"></ul>
+    <a class="btn" href="#feedback" id="panel-all">管理與匯出</a>
+  </aside>
+
+  <dialog id="lightbox" aria-label="畫面截圖"><img alt=""><p></p><form method="dialog"><button class="btn">關閉</button></form></dialog>
+
+  <script src="proposal-data.js"></script>
+  <script src="proposal.js"></script>
+</body>
+</html>
