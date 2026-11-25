@@ -2,6 +2,7 @@ using PointHub.Api.Http;
 using PointHub.Domain.Common;
 using PointHub.Domain.Events;
 using PointHub.Domain.Gifts;
+using PointHub.Infrastructure.Persistence;
 
 namespace PointHub.Tests;
 
@@ -40,6 +41,54 @@ public class SearchTextTests
 
         Assert.Contains("馬克杯", gift.SearchText);
         Assert.Contains("Ceramic", gift.SearchText);
+    }
+}
+
+public class GiftCatalogTests
+{
+    private static readonly DateTimeOffset Now = new(2026, 11, 25, 9, 0, 0, TimeSpan.Zero);
+
+    private static Gift NewGift(int id, int cost, int addedDaysAgo) =>
+        new() { Id = id, Name = new($"Gift {id}"), PointCost = cost, CreatedAt = Now.AddDays(-addedDaysAgo) };
+
+    private static Redemption Claim(int giftId, int quantity) => new() { GiftId = giftId, Quantity = quantity };
+
+    private static int[] Ids(IEnumerable<Gift> gifts) => [.. gifts.Select(g => g.Id)];
+
+    private static readonly Gift[] Gifts = [NewGift(1, 500, 10), NewGift(2, 30, 90), NewGift(3, 80, 40), NewGift(4, 30, 5)];
+
+    [Fact]
+    public void The_most_claimed_gift_comes_first_and_ties_go_cheapest_first()
+    {
+        var handedOver = Claim(3, 2);
+        handedOver.Fulfill(byId: 7, Now);
+        Redemption[] claims = [Claim(1, 1), handedOver, Claim(3, 1)];
+
+        // 3 has three units out, 1 has one; 2 and 4 have none and cost the same, so the older id leads.
+        Assert.Equal([3, 1, 2, 4], Ids(Gifts.AsQueryable().Sorted(GiftSort.Popular, claims.AsQueryable())));
+    }
+
+    [Fact]
+    public void Claims_that_were_cancelled_or_refunded_do_not_make_a_gift_popular()
+    {
+        var cancelled = Claim(1, 5);
+        cancelled.Cancel(byId: 7, Now, "Changed their mind");
+        var refunded = Claim(1, 5);
+        refunded.Fulfill(byId: 7, Now);
+        refunded.Refund(byId: 7, Now, "Arrived broken");
+        Redemption[] claims = [cancelled, refunded, Claim(3, 1)];
+
+        Assert.Equal([3, 2, 4, 1], Ids(Gifts.AsQueryable().Sorted(GiftSort.Popular, claims.AsQueryable())));
+    }
+
+    [Fact]
+    public void The_catalogue_can_be_ordered_by_cost_and_by_age()
+    {
+        var none = Array.Empty<Redemption>().AsQueryable();
+
+        Assert.Equal([2, 4, 3, 1], Ids(Gifts.AsQueryable().Sorted(GiftSort.CostAsc, none)));
+        Assert.Equal([1, 3, 2, 4], Ids(Gifts.AsQueryable().Sorted(GiftSort.CostDesc, none)));
+        Assert.Equal([4, 1, 3, 2], Ids(Gifts.AsQueryable().Sorted(GiftSort.Newest, none)));
     }
 }
 

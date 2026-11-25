@@ -63,7 +63,8 @@ The page composition follows the chosen "Arcade" prototype (`design-lab/chakra`)
 
 - The API lists open events only. One whose `startsAt` is still ahead is shown as upcoming; that is a display rule, the host may already accept check-ins for it.
 - Recent activity sits where the prototype has a leaderboard. There is deliberately no leaderboard and no rank: whether employees may see each other's points is an open decision.
-- `/gifts` stays the full catalogue plus "My claims"; both pages use the same `<GiftCatalog>`.
+- `/gifts` is the full catalogue and nothing else; the home page and `/gifts` use the same `<GiftCatalog>`.
+- `/claims` ("My claims") is the third entry of the employee navigation (top bar on desktop, tab bar on phones): the person's own claims, newest first, with what became of each. The dialog that confirms a claim links to it.
 
 **Check-in scanner.** The check-in buttons open a dialog that reads the camera with `navigator.mediaDevices.getUserMedia` and the browser's `BarcodeDetector`. When it sees a PointHub check-in link it opens that page of the app. A link is accepted only if it is http(s) on this page's origin or on `siteConfig.publicBaseUrl`, with the path `/c/{token}`; only the token and `k` are carried over, and anything else a QR code contains is ignored with a short notice (`src/lib/checkInLink.ts`). The camera stream is stopped the moment the dialog closes. Where `BarcodeDetector` or the camera is missing or refused (most desktop browsers, Firefox, Safari and every iPhone browser, plain-http LAN addresses) the dialog says so and tells the person to scan the event's QR code with the phone's own camera or to tap the staff badge. No scanning library is bundled: the phone's camera app opens the same link.
 
@@ -80,7 +81,7 @@ The page composition follows the chosen "Arcade" prototype (`design-lab/chakra`)
 **Search.** Every search box sends `?q=` to the server after 250 ms of quiet and keeps the previous result on screen (dimmed) until the next one arrives; nothing is filtered in the browser. The server matches every word, in any of the three languages. A search without a hit says "Nothing matches '…'" with a button back to the whole list.
 
 - Employee home (`/`): events (`?events=`), gifts (`?gifts=`) and the person's own history (`?history=`, `GET /api/me/points?q=`). The balance and lifetime totals in that answer are not filtered, so the hero uses the same call. "See all" carries the gift search to `/gifts?q=`.
-- `/gifts`: the catalogue (`?q=`).
+- `/gifts`: the catalogue (`?q=`), most claimed first. Beside the search box: a sort menu (`?sort=costAsc|costDesc|newest`; the default, most popular, is not written to the URL) and two on/off filters, "In stock" (`?stock=1`) and "Within my points" (`?afford=1`). The server sorts and filters (`GET /api/gifts?sort=&inStock=&affordable=`), so the page can be bookmarked as it is. When the filters hide everything the page says so and offers "Clear filters"; a search term is kept. The home page shows the six most popular gifts without these controls.
 
 **Admin lists.** Ledger (`/admin/ledger`: `q`, `type`, `from`, `to`, plus `employeeId` / `eventId` chips), attendance (`/admin/attendance`: `q`, `status`, `from`, `to`, `eventId`; `GET /api/admin/checkins`, read-only), claims (`/admin/claims`: `status` tab, `q`, `giftId`, `from`, `to`) and employees (`/admin/employees`: `q`). Dates are plain `YYYY-MM-DD` days from the browser's date picker; the server reads them in the site time zone.
 

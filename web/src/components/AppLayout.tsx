@@ -1,5 +1,5 @@
 import { Avatar, Box, Card, Center, Flex, IconButton, Menu, Portal, SegmentGroup, Text } from '@chakra-ui/react';
-import { CalendarCheck, CalendarDays, ClipboardCheck, Gift, History, House, KeyRound, LayoutDashboard, LogOut, Mail, Package, Palette, ReceiptText, Star, Users, type LucideIcon } from 'lucide-react';
+import { CalendarCheck, CalendarDays, ClipboardCheck, Gift, History, House, KeyRound, LayoutDashboard, LogOut, Mail, Package, Palette, ReceiptText, ShoppingBag, Star, Users, type LucideIcon } from 'lucide-react';
 import { motion } from 'motion/react';
 import { Suspense, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -29,12 +29,13 @@ interface NavItem {
   badge?: { count: number; label: string };
 }
 
-/** The employee side: two pages, linked from the top bar (desktop) and the tab bar (phones). */
+/** The employee side: three pages, linked from the top bar (desktop) and the tab bar (phones). */
 function useEmployeeNav(): NavItem[] {
   const { t } = useTranslation();
   return [
     { to: '/', label: t('nav.dashboard'), icon: House, end: true },
     { to: '/gifts', label: t('nav.gifts'), icon: Gift },
+    { to: '/claims', label: t('nav.myClaims'), icon: ShoppingBag },
   ];
 }
 
@@ -120,7 +121,7 @@ function SideSwitch({ managing, home }: { managing: boolean; home: string }) {
   );
 }
 
-/** Home / Gifts in the top bar, from tablet width up. Phones get the tab bar instead. */
+/** Home / Gifts / My claims in the top bar, from tablet width up. Phones get the tab bar instead. */
 function EmployeeLinks({ items }: { items: NavItem[] }) {
   const { t } = useTranslation();
   const { pathname } = useLocation();

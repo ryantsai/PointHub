@@ -1,15 +1,16 @@
 import { Badge, Box, Button, Flex, Grid, Progress, Text, type GridProps } from '@chakra-ui/react';
-import { Check, Lock, PackageX, ShieldCheck } from 'lucide-react';
+import { Check, Lock, PackageX, SearchX, ShieldCheck } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useGifts, useRedeemGift } from '../api/gifts';
+import { Link } from 'react-router';
+import { GIFT_SORTS, useGifts, useRedeemGift } from '../api/gifts';
 import type { Gift, Redemption } from '../api/types';
 import { useErrorMessage, useFormat, useLocalized } from '../i18n/hooks';
 import { limitLeft, maxClaimable } from '../lib/gifts';
 import { springs } from '../lib/motion';
 import { useSession } from '../lib/session';
-import { useUrlSearch } from '../lib/urlFilters';
+import { readEnum, useUrlFilters, useUrlSearch } from '../lib/urlFilters';
 import { giftBox } from '../themes/sprites/ui';
 import { GiftGallery } from './GiftGallery';
 import { Stagger, StaggerItem } from './Page';
@@ -17,11 +18,12 @@ import { EmptyState, ErrorBlock, LoadingBlock, NoMatch } from './states';
 import { StatusBurst } from './StatusBurst';
 import { Coin, Points } from './ui/bits';
 import { Burst } from './ui/Burst';
-import { NumberField } from './ui/fields';
+import { NumberField, SelectField } from './ui/fields';
 import { Modal } from './ui/Modal';
 import { Notice } from './ui/Notice';
 import { Panel } from './ui/Panel';
 import { SearchField } from './ui/SearchField';
+import { ToggleChip } from './ui/ToggleChip';
 
 /** How long a card keeps celebrating after its gift was redeemed. */
 const CELEBRATION_MS = 1800;
@@ -76,9 +78,12 @@ function RedeemDialog({ gift, onRedeemed, onClose }: { gift: Gift; onRedeemed: (
         <Text color="fg.muted" fontWeight="medium" mt="1">
           {t('gifts.redeemedBody')}
         </Text>
-        <Button mt="3" onClick={onClose}>
-          {t('app.close')}
-        </Button>
+        <Flex mt="3" gap="2" wrap="wrap" justify="center">
+          <Button asChild variant="outline">
+            <Link to="/claims">{t('gifts.viewMine')}</Link>
+          </Button>
+          <Button onClick={onClose}>{t('app.close')}</Button>
+        </Flex>
       </Flex>
     );
   }
@@ -137,7 +142,8 @@ function GiftCard({ gift, onRedeem, celebration }: GiftCardProps) {
 
   return (
     // The motion element wraps the panel (`<Panel asChild>` would merge the card into its own body).
-    <motion.article whileHover={{ y: -5 }} transition={springs.soft} style={{ height: '100%' }}>
+    // `layout`: when the order changes (another sort, a filter), the card glides to its new place.
+    <motion.article layout="position" whileHover={{ y: -5 }} transition={springs.soft} style={{ height: '100%' }}>
       <Panel padding={{ base: '3', md: '4' }} gap="3" h="full" overflow="visible">
         <Box position="relative">
           {/* the picture hops when its gift is redeemed */}
@@ -243,6 +249,8 @@ interface GiftCatalogProps {
   columns?: GridProps['templateColumns'];
   /** The query-string key of the search box (default `q`); the home page has several searches and names each. */
   searchParam?: string;
+  /** Adds the sort menu and the filters beside the search box (the gifts page). They live in the URL: `?sort=`, `?stock=1`, `?afford=1`. */
+  controls?: boolean;
 }
 
 /**
@@ -250,11 +258,18 @@ interface GiftCatalogProps {
  * limit with what it still leaves this person (`perEmployeeLimit - claimedByMe`), and one action slot (redeem / need N more / out of stock / limit reached). Redeeming opens the confirm
  * dialog; when it closes after a success, the card celebrates. Used by the home page and by `/gifts`.
  * The search box above the cards asks the server (`/api/gifts?q=`): every word must match, in any language.
+ * The most claimed gifts come first. With `controls`, people can pick another order (points, newest) and
+ * narrow the list to what is in stock and to what their points cover; the server does both.
  */
-export function GiftCatalog({ limit, columns, searchParam = 'q' }: GiftCatalogProps) {
+export function GiftCatalog({ limit, columns, searchParam = 'q', controls = false }: GiftCatalogProps) {
   const { t } = useTranslation();
   const search = useUrlSearch(searchParam);
-  const gifts = useGifts(search.q);
+  const { params, patch } = useUrlFilters();
+  const sort = (controls ? readEnum(params, 'sort', GIFT_SORTS) : null) ?? 'popular';
+  const inStock = controls && params.get('stock') === '1';
+  const affordable = controls && params.get('afford') === '1';
+  const filtered = inStock || affordable;
+  const gifts = useGifts({ q: search.q, sort, inStock, affordable });
   const [selected, setSelected] = useState<Gift | null>(null);
   const [redeemed, setRedeemed] = useState<Redemption | null>(null);
   const [celebration, setCelebration] = useState<Celebration | null>(null);
@@ -275,13 +290,41 @@ export function GiftCatalog({ limit, columns, searchParam = 'q' }: GiftCatalogPr
 
   return (
     <Flex direction="column" gap="4" minW="0">
-      <SearchField maxW={{ md: '420px' }} label={t('gifts.search')} value={search.text} onChange={search.onChange} />
+      <Flex gap="3" align="center" wrap="wrap">
+        <SearchField flex="1 1 240px" minW="0" maxW={{ md: '420px' }} label={t('gifts.search')} value={search.text} onChange={search.onChange} />
+        {controls && (
+          <>
+            <Box w={{ base: 'full', sm: '220px' }}>
+              <SelectField
+                aria-label={t('gifts.sortLabel')}
+                data={GIFT_SORTS.map((value) => ({ value, label: t(`gifts.sort.${value}`) }))}
+                value={sort}
+                // The default order is not written to the URL.
+                onChange={(next) => patch({ sort: next === null || next === 'popular' ? null : next })}
+              />
+            </Box>
+            <ToggleChip value={inStock} onChange={(on) => patch({ stock: on ? 1 : null })}>
+              {t('gifts.filterInStock')}
+            </ToggleChip>
+            <ToggleChip value={affordable} onChange={(on) => patch({ afford: on ? 1 : null })}>
+              {t('gifts.filterAffordable')}
+            </ToggleChip>
+          </>
+        )}
+      </Flex>
       {gifts.isPending ? (
         <LoadingBlock />
       ) : gifts.error ? (
         <ErrorBlock error={gifts.error} onRetry={() => void gifts.refetch()} />
       ) : gifts.data.length === 0 ? (
-        search.q !== '' ? (
+        filtered ? (
+          // The filters may be what hides everything: offer to drop them first; a search term stays.
+          <EmptyState message={t('gifts.noFilterMatch')} icon={<SearchX size={26} strokeWidth={2.2} aria-hidden />}>
+            <Button size="sm" variant="outline" onClick={() => patch({ stock: null, afford: null })}>
+              {t('filters.clear')}
+            </Button>
+          </EmptyState>
+        ) : search.q !== '' ? (
           <NoMatch q={search.q} onClear={() => search.onChange('')} />
         ) : (
           <EmptyState message={t('gifts.noGifts')} sprite={giftBox} />

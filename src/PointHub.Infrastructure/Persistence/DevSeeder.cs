@@ -120,18 +120,19 @@ public sealed class DevSeeder(PointHubDbContext db, CheckInService checkIns, Red
             await checkIns.CheckInAsync(kickoff, staff[index], CheckInMethod.Link, hostId: null, ct);
 
         // ---- Gifts -----------------------------------------------------------------------------------------------
-        Gift NewGift(LocalizedText name, LocalizedText description, int cost, int stock, int? limit = null)
+        // Added at different times, so "newest first" has something to show; each is older than its first claim below.
+        Gift NewGift(LocalizedText name, LocalizedText description, int cost, int stock, int addedDaysAgo, int? limit = null)
         {
-            var gift = new Gift { Name = name, Description = description, PointCost = cost, PerEmployeeLimit = limit, CreatedAt = now.AddDays(-90) };
+            var gift = new Gift { Name = name, Description = description, PointCost = cost, PerEmployeeLimit = limit, CreatedAt = now.AddDays(-addedDaysAgo) };
             if (stock > 0) gift.ChangeStock(stock);
             return gift;
         }
-        var voucher = NewGift(new("Coffee Voucher", "コーヒーチケット", "咖啡兌換券"), new("One drink at the lobby café.", "ロビーカフェのドリンク1杯。", "大廳咖啡廳飲品一杯。"), 30, 200, limit: 5);
-        var mug = NewGift(new("Company Mug", "オリジナルマグカップ", "公司馬克杯"), new("Ceramic, 350 ml.", "陶器製、350ml。", "陶瓷，350 毫升。"), 80, 40);
-        var movie = NewGift(new("Movie Ticket Pair", "映画ペアチケット", "電影雙人票"), new("Valid at partner cinemas for 6 months.", "提携映画館で6か月有効。", "合作影城，六個月內有效。"), 400, 12);
-        var earbuds = NewGift(new("Wireless Earbuds", "ワイヤレスイヤホン", "無線耳機"), new("Noise cancelling, 24 h battery.", "ノイズキャンセリング、24時間バッテリー。", "主動降噪，24 小時續航。"), 1500, 3, limit: 1);
-        var dayOff = NewGift(new("Extra Half-day Off", "半日休暇", "半天特休"), new("Subject to manager approval.", "上長の承認が必要です。", "需經主管核准。"), 500, 10, limit: 1);
-        var donation = NewGift(new("Charity Donation", "チャリティ寄付", "公益捐款"), new("We donate NT$300 in your name.", "あなたの名義でNT$300を寄付します。", "以您的名義捐出新台幣 300 元。"), 100, 0);
+        var voucher = NewGift(new("Coffee Voucher", "コーヒーチケット", "咖啡兌換券"), new("One drink at the lobby café.", "ロビーカフェのドリンク1杯。", "大廳咖啡廳飲品一杯。"), 30, 200, addedDaysAgo: 180, limit: 5);
+        var mug = NewGift(new("Company Mug", "オリジナルマグカップ", "公司馬克杯"), new("Ceramic, 350 ml.", "陶器製、350ml。", "陶瓷，350 毫升。"), 80, 40, addedDaysAgo: 150);
+        var movie = NewGift(new("Movie Ticket Pair", "映画ペアチケット", "電影雙人票"), new("Valid at partner cinemas for 6 months.", "提携映画館で6か月有効。", "合作影城，六個月內有效。"), 400, 12, addedDaysAgo: 30);
+        var earbuds = NewGift(new("Wireless Earbuds", "ワイヤレスイヤホン", "無線耳機"), new("Noise cancelling, 24 h battery.", "ノイズキャンセリング、24時間バッテリー。", "主動降噪，24 小時續航。"), 1500, 3, addedDaysAgo: 60, limit: 1);
+        var dayOff = NewGift(new("Extra Half-day Off", "半日休暇", "半天特休"), new("Subject to manager approval.", "上長の承認が必要です。", "需經主管核准。"), 500, 10, addedDaysAgo: 10, limit: 1);
+        var donation = NewGift(new("Charity Donation", "チャリティ寄付", "公益捐款"), new("We donate NT$300 in your name.", "あなたの名義でNT$300を寄付します。", "以您的名義捐出新台幣 300 元。"), 100, 0, addedDaysAgo: 20);
         foreach (var gift in new[] { voucher, mug, movie, earbuds, dayOff, donation })
         {
             db.Gifts.Add(gift);

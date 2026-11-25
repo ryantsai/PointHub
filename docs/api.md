@@ -199,7 +199,7 @@ Roster CSV: UTF-8 (BOM allowed), header row required, columns `employeeNo` (requ
 
 | method | path | role | body | returns |
 | --- | --- | --- | --- | --- |
-| GET | `/api/gifts?q=` | any | | `Gift[]` (enabled gifts only). `q` searches name and description |
+| GET | `/api/gifts?q=&sort=&inStock=&affordable=` | any | | `Gift[]` (enabled gifts only). `q` searches name and description. `sort`: `popular` (default; most claimed first, cancelled and refunded claims not counted, ties cheapest first), `costAsc`, `costDesc`, `newest`; any other value is `400 validation_failed`. `inStock=true` leaves out sold-out gifts; `affordable=true` keeps only gifts the caller's balance covers |
 | POST | `/api/gifts/{id}/redeem` | any | `{ quantity: number }` | `Redemption` (status `requested`; points and stock are taken immediately) |
 | GET | `/api/admin/gifts` | giftAdmin, systemAdmin | | `Gift[]` (all, including disabled) |
 | POST | `/api/admin/gifts` | giftAdmin, systemAdmin | `GiftInput` | `Gift` |

@@ -17,7 +17,7 @@ export const keys = {
   pendingCheckIns: ['host', 'checkins', 'pending'] as const,
   eventCheckIns: (id: number, status: string | null) => ['host', 'event', id, 'checkins', status ?? 'all'] as const,
   gifts: ['gifts'] as const,
-  giftSearch: (q: string) => ['gifts', q] as const,
+  giftList: (query: QueryParams) => ['gifts', query] as const,
   adminGifts: ['admin', 'gifts'] as const,
   adminStats: ['admin', 'stats'] as const,
   adminRedemptions: (query?: QueryParams) => (query ? ['admin', 'redemptions', query] : ['admin', 'redemptions']),

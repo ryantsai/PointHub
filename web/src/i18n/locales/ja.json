@@ -43,7 +43,8 @@
     "sideEmployee": "社員",
     "sideManage": "管理",
     "sideSwitch": "社員画面と管理画面の切り替え",
-    "attendance": "出席記録"
+    "attendance": "出席記録",
+    "myClaims": "交換履歴"
   },
   "themes": {
     "default": "標準",
@@ -198,8 +199,10 @@
   "gifts": {
     "title": "ギフト",
     "subtitle": "貯まったポイントをギフトと交換できます。",
-    "tabCatalog": "カタログ",
-    "tabMine": "交換履歴",
+    "mineTitle": "交換履歴",
+    "mineSubtitle": "これまでに交換したギフトと、その状況です。",
+    "viewMine": "交換履歴を見る",
+    "browse": "ギフトを見る",
     "redeem": "交換する",
     "redeemTitle": "ギフトの交換",
     "confirmRedeem": "交換を確定",
@@ -227,7 +230,17 @@
     "needMore": "あと {{points}} ポイント必要です",
     "imageOf": "画像 {{index}} / {{count}}",
     "redeemed": "交換しました",
-    "search": "ギフトを検索"
+    "search": "ギフトを検索",
+    "sortLabel": "ギフトの並び順",
+    "sort": {
+      "popular": "人気順",
+      "costAsc": "ポイントが少ない順",
+      "costDesc": "ポイントが多い順",
+      "newest": "新着順"
+    },
+    "filterInStock": "在庫あり",
+    "filterAffordable": "今のポイントで交換可",
+    "noFilterMatch": "条件に合うギフトはありません。"
   },
   "host": {
     "eventsTitle": "イベント",

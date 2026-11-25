@@ -7,6 +7,7 @@ import { loadAdminDashboard } from './pages/admin/dashboardLoader';
 import { GiftsPage } from './pages/GiftsPage';
 import { HomePage } from './pages/home/HomePage';
 import { LoginPage } from './pages/LoginPage';
+import { MyClaimsPage } from './pages/MyClaimsPage';
 import { NotFoundPage } from './pages/NotFoundPage';
 
 // Host and admin screens are loaded on demand so employees on phones only download what they use.
@@ -28,7 +29,7 @@ const HostEventsPage = lazy(() => import('./pages/host/HostEventsPage').then((m)
 /**
  * Route map. Guards only hide pages; every rule is enforced again by the API.
  *   /login                 anonymous
- *   /, /gifts, /c/:token   any signed-in employee
+ *   /, /gifts, /claims, /c/:token   any signed-in employee (/claims: the person's own gift claims)
  *   /host/*                eventAdmin, systemAdmin
  *   /admin                 systemAdmin, auditor: the dashboard, landing page of the management side
  *   /admin/ledger|attendance|employees|audit   systemAdmin, auditor (auditor is read-only)
@@ -48,6 +49,7 @@ export function App() {
           <Route index element={<HomePage />} />
           <Route path="c/:token" element={<CheckInPage />} />
           <Route path="gifts" element={<GiftsPage />} />
+          <Route path="claims" element={<MyClaimsPage />} />
           <Route element={<RequireRole permission="host" />}>
             <Route path="host/events" element={<HostEventsPage />} />
             <Route path="host/events/:id" element={<EventDetailPage />} />

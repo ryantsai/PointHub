@@ -46,7 +46,7 @@ export function ClaimsPage() {
   const manages = can.manageGifts(me);
   // The gift filter: people who manage gifts get every gift, an auditor the catalogue (the full list is refused to them).
   const allGifts = useAdminGifts(manages);
-  const catalogue = useGifts('', !manages);
+  const catalogue = useGifts({}, !manages);
   const gifts = (manages ? allGifts.data : catalogue.data) ?? [];
 
   const status = readEnum(params, 'status', STATUSES) ?? 'requested';

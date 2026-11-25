@@ -23,11 +23,32 @@ function refreshRedemptions(qc: QueryClient) {
   for (const key of pointKeys) void qc.invalidateQueries({ queryKey: key });
 }
 
-/** The catalogue. `q` is searched by the server (name and description; every word, any language). */
-export function useGifts(q = '', enabled = true) {
+/** The orders of the catalogue (`GET /api/gifts?sort=`); the first one is what the server does when none is asked for. */
+export const GIFT_SORTS = ['popular', 'costAsc', 'costDesc', 'newest'] as const;
+export type GiftSort = (typeof GIFT_SORTS)[number];
+
+export type GiftFilters = {
+  /** Name and description; every word, any language. */
+  q: string;
+  sort: GiftSort;
+  /** Leave out gifts that are sold out. */
+  inStock: boolean;
+  /** Only gifts the signed-in person's balance covers. */
+  affordable: boolean;
+};
+
+/**
+ * The catalogue, searched, filtered and ordered by the server; without arguments, every enabled gift with the
+ * most claimed first. Only what differs from that is sent, and the plain list keeps the plain key, so every
+ * place that shows "all gifts" shares one request.
+ */
+export function useGifts(filters: Partial<GiftFilters> = {}, enabled = true) {
+  const { q = '', sort = 'popular', inStock = false, affordable = false } = filters;
+  const query = { q, sort: sort === 'popular' ? null : sort, inStock: inStock || null, affordable: affordable || null };
+  const plain = q === '' && query.sort === null && !inStock && !affordable;
   return useQuery({
-    queryKey: q === '' ? keys.gifts : keys.giftSearch(q),
-    queryFn: () => api.get<Gift[]>('/api/gifts', { q }),
+    queryKey: plain ? keys.gifts : keys.giftList(query),
+    queryFn: () => api.get<Gift[]>('/api/gifts', query),
     placeholderData: (previous) => previous,
     enabled,
   });

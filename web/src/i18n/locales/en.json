@@ -43,7 +43,8 @@
     "sideEmployee": "Employee",
     "sideManage": "Manage",
     "sideSwitch": "Switch between the employee side and the management side",
-    "attendance": "Attendance"
+    "attendance": "Attendance",
+    "myClaims": "My claims"
   },
   "themes": {
     "default": "Standard",
@@ -198,8 +199,10 @@
   "gifts": {
     "title": "Gifts",
     "subtitle": "Exchange your points for something nice.",
-    "tabCatalog": "Catalog",
-    "tabMine": "My claims",
+    "mineTitle": "My claims",
+    "mineSubtitle": "Every gift you have claimed, and where it stands.",
+    "viewMine": "View my claims",
+    "browse": "Browse gifts",
     "redeem": "Redeem",
     "redeemTitle": "Redeem gift",
     "confirmRedeem": "Redeem now",
@@ -227,7 +230,17 @@
     "needMore": "{{points}} more points needed",
     "imageOf": "Picture {{index}} of {{count}}",
     "redeemed": "Redeemed",
-    "search": "Search gifts"
+    "search": "Search gifts",
+    "sortLabel": "Sort gifts",
+    "sort": {
+      "popular": "Most popular",
+      "costAsc": "Points: low to high",
+      "costDesc": "Points: high to low",
+      "newest": "Newest"
+    },
+    "filterInStock": "In stock",
+    "filterAffordable": "Within my points",
+    "noFilterMatch": "No gifts match these filters."
   },
   "host": {
     "eventsTitle": "Events",

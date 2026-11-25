@@ -43,7 +43,8 @@
     "sideEmployee": "員工",
     "sideManage": "管理",
     "sideSwitch": "切換員工頁面與管理頁面",
-    "attendance": "出席紀錄"
+    "attendance": "出席紀錄",
+    "myClaims": "我的兌換"
   },
   "themes": {
     "default": "標準",
@@ -198,8 +199,10 @@
   "gifts": {
     "title": "禮品",
     "subtitle": "用累積的點數兌換喜歡的禮品。",
-    "tabCatalog": "禮品目錄",
-    "tabMine": "我的兌換",
+    "mineTitle": "我的兌換",
+    "mineSubtitle": "你兌換過的每一份禮品，以及目前的處理進度。",
+    "viewMine": "查看我的兌換",
+    "browse": "看看有哪些禮品",
     "redeem": "兌換",
     "redeemTitle": "兌換禮品",
     "confirmRedeem": "確認兌換",
@@ -227,7 +230,17 @@
     "needMore": "還差 {{points}} 點",
     "imageOf": "圖片 {{index}} / {{count}}",
     "redeemed": "已兌換",
-    "search": "搜尋禮品"
+    "search": "搜尋禮品",
+    "sortLabel": "禮品排序",
+    "sort": {
+      "popular": "熱門優先",
+      "costAsc": "點數由低到高",
+      "costDesc": "點數由高到低",
+      "newest": "最新上架"
+    },
+    "filterInStock": "有庫存",
+    "filterAffordable": "點數足夠",
+    "noFilterMatch": "沒有符合條件的禮品。"
   },
   "host": {
     "eventsTitle": "活動",

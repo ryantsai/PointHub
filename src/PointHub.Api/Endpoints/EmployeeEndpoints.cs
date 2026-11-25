@@ -64,8 +64,21 @@ public static class EmployeeEndpoints
             return Results.Ok(await db.CheckInDtoAsync(checkIn.Id, ct));
         });
 
-        group.MapGet("/gifts", async (string? q, ClaimsPrincipal user, PointHubDbContext db, CancellationToken ct) =>
-            await db.Gifts.AsNoTracking().Where(g => g.IsActive).Matching(q).OrderBy(g => g.PointCost).Select(GiftDto.ProjectionFor(db.Redemptions, user.EmployeeId())).ToListAsync(ct));
+        // The catalogue: most claimed first unless `sort` says otherwise. `inStock` and `affordable` narrow it to
+        // what is left and to what the caller's balance covers.
+        group.MapGet("/gifts", async (string? q, string? sort, bool? inStock, bool? affordable, ClaimsPrincipal user, PointHubDbContext db, CancellationToken ct) =>
+        {
+            var order = QueryEnum.Parse<GiftSort>(sort) ?? GiftSort.Popular;
+            var me = user.EmployeeId();
+            var gifts = db.Gifts.AsNoTracking().Where(g => g.IsActive).Matching(q);
+            if (inStock == true) gifts = gifts.Where(g => g.Stock > 0);
+            if (affordable == true)
+            {
+                var balance = await db.PointAccounts.Where(a => a.EmployeeId == me).Select(a => a.Balance).SingleAsync(ct);
+                gifts = gifts.Where(g => g.PointCost <= balance);
+            }
+            return await gifts.Sorted(order, db.Redemptions).Select(GiftDto.ProjectionFor(db.Redemptions, me)).ToListAsync(ct);
+        });
 
         group.MapPost("/gifts/{id:int}/redeem", async (int id, RedeemRequest request, ClaimsPrincipal user, PointHubDbContext db, RedemptionService redemptions, CancellationToken ct) =>
         {

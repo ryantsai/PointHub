@@ -74,7 +74,7 @@ const staff = await session('E0101');
 await shot(staff, 'dashboard', '/', { settle: 3200 });
 await shot(staff, 'gifts', '/gifts');
 await shot(staff, 'search', `/gifts?q=${encodeURIComponent('咖啡')}`);
-await shot(staff, 'claims', '/gifts', { before: (page) => page.getByRole('tab').nth(1).click() });
+await shot(staff, 'claims', '/claims');
 for (const theme of THEMES) {
   const themed = await session('E0101', SMALL);
   await shot(themed, `theme-${theme}`, `/?theme=${theme}`, { settle: 3600 });
