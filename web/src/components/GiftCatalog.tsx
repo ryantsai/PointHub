@@ -4,16 +4,16 @@ import { AnimatePresence, motion } from 'motion/react';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useGifts, useRedeemGift } from '../api/gifts';
-import { useMyRedemptions } from '../api/me';
 import type { Gift, Redemption } from '../api/types';
 import { useErrorMessage, useFormat, useLocalized } from '../i18n/hooks';
-import { remainingAllowance } from '../lib/gifts';
+import { limitLeft, maxClaimable } from '../lib/gifts';
 import { springs } from '../lib/motion';
 import { useSession } from '../lib/session';
+import { useUrlSearch } from '../lib/urlFilters';
 import { giftBox } from '../themes/sprites/ui';
 import { GiftGallery } from './GiftGallery';
 import { Stagger, StaggerItem } from './Page';
-import { EmptyState, ErrorBlock, LoadingBlock } from './states';
+import { EmptyState, ErrorBlock, LoadingBlock, NoMatch } from './states';
 import { StatusBurst } from './StatusBurst';
 import { Coin, Points } from './ui/bits';
 import { Burst } from './ui/Burst';
@@ -21,6 +21,7 @@ import { NumberField } from './ui/fields';
 import { Modal } from './ui/Modal';
 import { Notice } from './ui/Notice';
 import { Panel } from './ui/Panel';
+import { SearchField } from './ui/SearchField';
 
 /** How long a card keeps celebrating after its gift was redeemed. */
 const CELEBRATION_MS = 1800;
@@ -39,7 +40,7 @@ function SummaryRow({ label, value, negative }: { label: string; value: number; 
   );
 }
 
-function RedeemDialog({ gift, allowance, onRedeemed, onClose }: { gift: Gift; allowance: number; onRedeemed: (redemption: Redemption) => void; onClose: () => void }) {
+function RedeemDialog({ gift, onRedeemed, onClose }: { gift: Gift; onRedeemed: (redemption: Redemption) => void; onClose: () => void }) {
   const { t } = useTranslation();
   const me = useSession();
   const format = useFormat();
@@ -53,6 +54,10 @@ function RedeemDialog({ gift, allowance, onRedeemed, onClose }: { gift: Gift; al
   const count = quantity === '' ? 1 : quantity;
   const total = gift.pointCost * count;
   const balanceAfter = balance - total;
+  // The picker stops at whichever runs out first: the per-person limit, the stock, the balance. After a refused
+  // claim the gift is refetched, so `max` can drop to 0 while the dialog is open: the button then stays off.
+  const left = limitLeft(gift);
+  const max = maxClaimable(gift, balance);
 
   if (redeem.isSuccess) {
     return (
@@ -91,7 +96,7 @@ function RedeemDialog({ gift, allowance, onRedeemed, onClose }: { gift: Gift; al
           <Points value={gift.pointCost} size="sm" mt="1.5" />
         </Box>
       </Flex>
-      <NumberField label={t('gifts.quantity')} value={quantity} onChange={setQuantity} min={1} max={Math.max(1, allowance)} />
+      <NumberField label={t('gifts.quantity')} value={quantity} onChange={setQuantity} min={1} max={Math.max(1, max)} help={left !== null && left > 0 ? t('gifts.limitLeft', { count: left }) : undefined} />
       <Flex direction="column" gap="2" bg="bg.subtle" borderRadius="l2" p="3">
         <SummaryRow label={t('gifts.totalCost')} value={total} />
         <SummaryRow label={t('gifts.balanceAfter')} value={balanceAfter} negative={balanceAfter < 0} />
@@ -102,7 +107,7 @@ function RedeemDialog({ gift, allowance, onRedeemed, onClose }: { gift: Gift; al
         <Button variant="outline" onClick={onClose}>
           {t('app.cancel')}
         </Button>
-        <Button loading={redeem.isPending} disabled={balanceAfter < 0} onClick={() => redeem.mutate({ giftId: gift.id, quantity: count }, { onSuccess: onRedeemed })}>
+        <Button loading={redeem.isPending} disabled={count < 1 || count > max} onClick={() => redeem.mutate({ giftId: gift.id, quantity: count }, { onSuccess: onRedeemed })}>
           {t('gifts.confirmRedeem')}
         </Button>
       </Flex>
@@ -112,20 +117,21 @@ function RedeemDialog({ gift, allowance, onRedeemed, onClose }: { gift: Gift; al
 
 interface GiftCardProps {
   gift: Gift;
-  allowance: number;
   onRedeem: () => void;
   /** Set on the card whose gift was just redeemed. */
   celebration: Celebration | null;
 }
 
-function GiftCard({ gift, allowance, onRedeem, celebration }: GiftCardProps) {
+function GiftCard({ gift, onRedeem, celebration }: GiftCardProps) {
   const { t } = useTranslation();
   const me = useSession();
   const format = useFormat();
   const localized = useLocalized();
   const name = localized(gift.name);
   const soldOut = gift.stock <= 0;
-  const limitReached = !soldOut && allowance <= 0;
+  // What the per-person limit still leaves this person; `null` = the gift has no limit.
+  const left = limitLeft(gift);
+  const limitReached = !soldOut && left === 0;
   const missing = Math.max(0, gift.pointCost - me.balance);
   const celebrating = celebration?.active ?? false;
 
@@ -181,9 +187,17 @@ function GiftCard({ gift, allowance, onRedeem, celebration }: GiftCardProps) {
             )}
           </Flex>
           {gift.perEmployeeLimit !== null && (
-            <Text fontSize="xs" fontWeight="semibold" color="fg.muted" lineHeight="1.3">
-              {t('gifts.limit', { count: gift.perEmployeeLimit })}
-            </Text>
+            // Two phrases that wrap as wholes on a narrow card: what is left for this person, then the rule.
+            <Flex wrap="wrap" columnGap="2" fontSize="xs" lineHeight="1.35">
+              {left !== null && left > 0 && (
+                <Text as="span" fontWeight="bold" whiteSpace="nowrap">
+                  {t('gifts.limitLeft', { count: left })}
+                </Text>
+              )}
+              <Text as="span" fontWeight="semibold" color="fg.muted" whiteSpace="nowrap">
+                {t('gifts.limit', { count: gift.perEmployeeLimit })}
+              </Text>
+            </Flex>
           )}
         </Flex>
 
@@ -227,17 +241,20 @@ interface GiftCatalogProps {
   limit?: number;
   /** Grid columns; default: 2 on phones, 3 from md, 4 from xl. */
   columns?: GridProps['templateColumns'];
+  /** The query-string key of the search box (default `q`); the home page has several searches and names each. */
+  searchParam?: string;
 }
 
 /**
  * The gift catalogue as cards: picture (gallery when several, pixel-art box when none), cost, stock, per-person
- * limit, and one action slot (redeem / need N more / out of stock / limit reached). Redeeming opens the confirm
+ * limit with what it still leaves this person (`perEmployeeLimit - claimedByMe`), and one action slot (redeem / need N more / out of stock / limit reached). Redeeming opens the confirm
  * dialog; when it closes after a success, the card celebrates. Used by the home page and by `/gifts`.
+ * The search box above the cards asks the server (`/api/gifts?q=`): every word must match, in any language.
  */
-export function GiftCatalog({ limit, columns }: GiftCatalogProps) {
+export function GiftCatalog({ limit, columns, searchParam = 'q' }: GiftCatalogProps) {
   const { t } = useTranslation();
-  const gifts = useGifts();
-  const redemptions = useMyRedemptions();
+  const search = useUrlSearch(searchParam);
+  const gifts = useGifts(search.q);
   const [selected, setSelected] = useState<Gift | null>(null);
   const [redeemed, setRedeemed] = useState<Redemption | null>(null);
   const [celebration, setCelebration] = useState<Celebration | null>(null);
@@ -254,31 +271,39 @@ export function GiftCatalog({ limit, columns }: GiftCatalogProps) {
     timer.current = window.setTimeout(() => setCelebration((current) => current && { ...current, active: false }), CELEBRATION_MS);
   };
 
-  if (gifts.isPending) return <LoadingBlock />;
-  if (gifts.error) return <ErrorBlock error={gifts.error} onRetry={() => void gifts.refetch()} />;
-  if (gifts.data.length === 0) return <EmptyState message={t('gifts.noGifts')} sprite={giftBox} />;
-
-  const shown = limit === undefined ? gifts.data : gifts.data.slice(0, limit);
+  const shown = limit === undefined ? (gifts.data ?? []) : (gifts.data ?? []).slice(0, limit);
 
   return (
-    <>
-      <Stagger>
-        <Grid templateColumns={columns ?? { base: 'repeat(2, minmax(0, 1fr))', md: 'repeat(3, minmax(0, 1fr))', xl: 'repeat(4, minmax(0, 1fr))' }} gap={{ base: '3', md: '4' }}>
-          {shown.map((gift) => (
-            <StaggerItem key={gift.id}>
-              <GiftCard
-                gift={gift}
-                allowance={remainingAllowance(gift, redemptions.data)}
-                onRedeem={() => setSelected(gift)}
-                celebration={celebration?.giftId === gift.id ? celebration : null}
-              />
-            </StaggerItem>
-          ))}
-        </Grid>
-      </Stagger>
+    <Flex direction="column" gap="4" minW="0">
+      <SearchField maxW={{ md: '420px' }} label={t('gifts.search')} value={search.text} onChange={search.onChange} />
+      {gifts.isPending ? (
+        <LoadingBlock />
+      ) : gifts.error ? (
+        <ErrorBlock error={gifts.error} onRetry={() => void gifts.refetch()} />
+      ) : gifts.data.length === 0 ? (
+        search.q !== '' ? (
+          <NoMatch q={search.q} onClear={() => search.onChange('')} />
+        ) : (
+          <EmptyState message={t('gifts.noGifts')} sprite={giftBox} />
+        )
+      ) : (
+        // While the next search is on its way the previous cards stay, dimmed.
+        <Box opacity={gifts.isPlaceholderData ? 0.55 : 1} transition="opacity 160ms" aria-busy={gifts.isPlaceholderData}>
+          <Stagger>
+            <Grid templateColumns={columns ?? { base: 'repeat(2, minmax(0, 1fr))', md: 'repeat(3, minmax(0, 1fr))', xl: 'repeat(4, minmax(0, 1fr))' }} gap={{ base: '3', md: '4' }}>
+              {shown.map((gift) => (
+                <StaggerItem key={gift.id}>
+                  <GiftCard gift={gift} onRedeem={() => setSelected(gift)} celebration={celebration?.giftId === gift.id ? celebration : null} />
+                </StaggerItem>
+              ))}
+            </Grid>
+          </Stagger>
+        </Box>
+      )}
       <Modal opened={selected !== null} onClose={close} title={t('gifts.redeemTitle')} size="sm">
-        {selected && <RedeemDialog key={selected.id} gift={selected} allowance={remainingAllowance(selected, redemptions.data)} onRedeemed={setRedeemed} onClose={close} />}
+        {/* The freshest copy of the gift: after a refused claim (limit reached, stock gone) the dialog shows why. If the gift has left the catalogue, the copy it was opened with. */}
+        {selected && <RedeemDialog key={selected.id} gift={gifts.data?.find((gift) => gift.id === selected.id) ?? selected} onRedeemed={setRedeemed} onClose={close} />}
       </Modal>
-    </>
+    </Flex>
   );
 }

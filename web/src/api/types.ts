@@ -75,6 +75,8 @@ export type Transaction = {
   eventId: number | null;
   eventTitle: LocalizedText | null;
   redemptionId: number | null;
+  /** The gift of the claim this row paid for, or that a cancel / refund gave back. */
+  giftName: LocalizedText | null;
   reversesTransactionId: number | null;
   reversedByTransactionId: number | null;
   createdAt: string;
@@ -187,15 +189,22 @@ export type Gift = {
   images: GiftImage[];
   pointCost: number;
   stock: number;
+  /** `false` = disabled: hidden from the catalogue and cannot be claimed. Claims that already exist are not affected. */
   isActive: boolean;
+  /** How many one person may claim in total: any whole number from 1 up, or `null` for unlimited. */
   perEmployeeLimit: number | null;
+  /** How many the signed-in person has claimed so far (cancelled and refunded claims do not count). */
+  claimedByMe: number;
 };
-export type GiftInput = Omit<Gift, 'id' | 'stock' | 'images'> & { initialStock?: number };
-export type RedemptionStatus = 'requested' | 'fulfilled' | 'cancelled';
+export type GiftInput = Omit<Gift, 'id' | 'stock' | 'images' | 'claimedByMe'> & { initialStock?: number };
+/** `cancelled`: taken back before the hand-over. `refunded`: taken back after it. Both return the points. */
+export type RedemptionStatus = 'requested' | 'fulfilled' | 'cancelled' | 'refunded';
 export type Redemption = {
   id: number;
   giftId: number;
   giftName: LocalizedText;
+  /** The gift's cover picture, also when the gift has since been disabled. */
+  giftImage: GiftImage | null;
   quantity: number;
   pointsSpent: number;
   status: RedemptionStatus;
@@ -205,6 +214,8 @@ export type Redemption = {
   requestedAt: string;
   closedAt: string | null;
   closedByName: string | null;
+  /** The reason given when the claim was cancelled or refunded. */
+  note: string | null;
 };
 
 // Admin
@@ -242,6 +253,19 @@ export type Employee = {
   roles: Role[];
   balance: number;
   cards: Card[];
+};
+/** `GET /api/admin/employees/{id}`: one person with their totals (the lookup page). */
+export type EmployeeDetail = Employee & {
+  lifetimeEarned: number;
+  lifetimeSpent: number;
+  preferredLocale: Locale | null;
+  createdAt: string;
+  /** Created at first sign-in, not yet confirmed by the HR push. */
+  isProvisional: boolean;
+  /** Approved check-ins. */
+  checkInCount: number;
+  /** Claims that still count (not cancelled or refunded). */
+  claimCount: number;
 };
 export type ApiScope = 'points:read' | 'points:write' | 'employees:write';
 export type ApiClient = {
@@ -296,6 +320,7 @@ export type EmailTemplateKey =
   | 'redemptionRequested'
   | 'redemptionFulfilled'
   | 'redemptionCancelled'
+  | 'redemptionRefunded'
   | 'pointsAdjusted';
 export type EmailTemplate = {
   key: EmailTemplateKey;

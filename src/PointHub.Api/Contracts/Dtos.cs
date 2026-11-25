@@ -28,12 +28,12 @@ public record DevUserDto(string EmployeeNo, string DisplayName, IEnumerable<stri
 
 public record TransactionDto(
     long Id, int EmployeeId, string EmployeeNo, string EmployeeName, int Amount, PointTransactionType Type, string? Reason,
-    int? EventId, LocalizedText? EventTitle, int? RedemptionId, long? ReversesTransactionId, long? ReversedByTransactionId,
+    int? EventId, LocalizedText? EventTitle, int? RedemptionId, LocalizedText? GiftName, long? ReversesTransactionId, long? ReversedByTransactionId,
     DateTimeOffset CreatedAt, string? CreatedByName, string? ApiClientName, string? ExternalReference)
 {
     public static readonly Expression<Func<PointTransaction, TransactionDto>> Projection = t => new TransactionDto(
         t.Id, t.EmployeeId, t.Employee.EmployeeNo, t.Employee.DisplayName, t.Amount, t.Type, t.Reason,
-        t.EventId, t.Event!.Title, t.RedemptionId, t.ReversesTransactionId, (long?)t.ReversedByTransaction!.Id,
+        t.EventId, t.Event!.Title, t.RedemptionId, t.Redemption!.Gift.Name, t.ReversesTransactionId, (long?)t.ReversedByTransaction!.Id,
         t.CreatedAt, t.CreatedBy!.DisplayName, t.ApiClient!.Name, t.ExternalReference);
 }
 
@@ -111,21 +111,31 @@ public record GiftImageDto(Guid Id, int Width, int Height)
     public string Url => $"/uploads/assets/{Id:N}.webp";
 }
 
-public record GiftDto(int Id, LocalizedText Name, LocalizedText? Description, IReadOnlyList<GiftImageDto> Images, int PointCost, int Stock, bool IsActive, int? PerEmployeeLimit)
+public record GiftDto(
+    int Id, LocalizedText Name, LocalizedText? Description, IReadOnlyList<GiftImageDto> Images, int PointCost, int Stock,
+    bool IsActive, int? PerEmployeeLimit, int ClaimedByMe)
 {
-    public static readonly Expression<Func<Gift, GiftDto>> Projection = g => new GiftDto(
+    /// <param name="redemptions">The claims table, so the caller's own count is one subquery in the same statement.</param>
+    /// <param name="employeeId">Whose claims <c>ClaimedByMe</c> counts. Cancelled and refunded claims are left out.</param>
+    public static Expression<Func<Gift, GiftDto>> ProjectionFor(IQueryable<Redemption> redemptions, int employeeId) => g => new GiftDto(
         g.Id, g.Name, g.Description,
         g.Images.OrderBy(i => i.SortOrder).Select(i => new GiftImageDto(i.Id, i.Width, i.Height)).ToList(),
-        g.PointCost, g.Stock, g.IsActive, g.PerEmployeeLimit);
+        g.PointCost, g.Stock, g.IsActive, g.PerEmployeeLimit,
+        redemptions.Where(r => r.GiftId == g.Id && r.EmployeeId == employeeId
+                && (r.Status == RedemptionStatus.Requested || r.Status == RedemptionStatus.Fulfilled))
+            .Sum(r => (int?)r.Quantity) ?? 0);
 }
 
 public record RedemptionDto(
-    int Id, int GiftId, LocalizedText GiftName, int Quantity, int PointsSpent, RedemptionStatus Status,
-    int EmployeeId, string EmployeeNo, string EmployeeName, DateTimeOffset RequestedAt, DateTimeOffset? ClosedAt, string? ClosedByName)
+    int Id, int GiftId, LocalizedText GiftName, GiftImageDto? GiftImage, int Quantity, int PointsSpent, RedemptionStatus Status,
+    int EmployeeId, string EmployeeNo, string EmployeeName, DateTimeOffset RequestedAt, DateTimeOffset? ClosedAt, string? ClosedByName, string? Note)
 {
+    // The picture comes with the claim, so it is still there when the gift has been disabled since.
     public static readonly Expression<Func<Redemption, RedemptionDto>> Projection = r => new RedemptionDto(
-        r.Id, r.GiftId, r.Gift.Name, r.Quantity, r.PointsSpent, r.Status,
-        r.EmployeeId, r.Employee.EmployeeNo, r.Employee.DisplayName, r.RequestedAt, r.ClosedAt, r.ClosedBy!.DisplayName);
+        r.Id, r.GiftId, r.Gift.Name,
+        r.Gift.Images.OrderBy(i => i.SortOrder).Select(i => new GiftImageDto(i.Id, i.Width, i.Height)).FirstOrDefault(),
+        r.Quantity, r.PointsSpent, r.Status,
+        r.EmployeeId, r.Employee.EmployeeNo, r.Employee.DisplayName, r.RequestedAt, r.ClosedAt, r.ClosedBy!.DisplayName, r.Note);
 }
 
 public record CardDto(int Id, string Uid, string? Label, bool IsActive, DateTimeOffset RegisteredAt)
@@ -136,6 +146,16 @@ public record CardDto(int Id, string Uid, string? Label, bool IsActive, DateTime
 public record EmployeeDto(int Id, string EmployeeNo, string DisplayName, string Email, string? Department, bool IsActive, IEnumerable<string> Roles, int Balance, IEnumerable<CardDto> Cards)
 {
     public static EmployeeDto From(Employee e) => new(e.Id, e.EmployeeNo, e.DisplayName, e.Email, e.Department, e.IsActive, e.RoleNames(), e.Account.Balance, e.Cards.Select(CardDto.From));
+}
+
+public record EmployeeDetailDto(
+    int Id, string EmployeeNo, string DisplayName, string Email, string? Department, bool IsActive, IEnumerable<string> Roles, int Balance,
+    IEnumerable<CardDto> Cards, int LifetimeEarned, int LifetimeSpent, string? PreferredLocale, DateTimeOffset CreatedAt, bool IsProvisional,
+    int CheckInCount, int ClaimCount)
+{
+    public static EmployeeDetailDto From(Employee e, int checkInCount, int claimCount) => new(
+        e.Id, e.EmployeeNo, e.DisplayName, e.Email, e.Department, e.IsActive, e.RoleNames(), e.Account.Balance, e.Cards.Select(CardDto.From),
+        e.Account.LifetimeEarned, e.Account.LifetimeSpent, e.PreferredLocale, e.CreatedAt, e.IsProvisional, checkInCount, claimCount);
 }
 
 public record AuditEntryDto(long Id, string? ActorName, string Action, string EntityType, string? EntityId, string? Summary, DateTimeOffset CreatedAt)
@@ -186,6 +206,8 @@ public record GiftInput(
 
 public record StockRequest(int Delta, [Required, StringLength(500)] string Reason);
 public record ReasonRequest([Required, StringLength(500)] string Reason);
+public record RefundRequest([Required, StringLength(500)] string Reason, bool Restock);
+public record ActiveRequest(bool IsActive);
 public record AdjustmentRequest(int EmployeeId, [Range(-1_000_000, 1_000_000)] int Amount, [Required, StringLength(500)] string Reason);
 public record RegisterCardRequest([Required] string CardUid, [StringLength(100)] string? Label);
 public record ThemeSettingsInput(ThemeMode Mode, string? ForcedThemeKey, [Required] string[] DisabledThemeKeys);

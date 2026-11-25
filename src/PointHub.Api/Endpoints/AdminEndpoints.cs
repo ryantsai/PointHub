@@ -31,6 +31,7 @@ public static class AdminEndpoints
             .RequireAuthorization(Policies.AdminRead);
 
         admin.MapSiteSettingsEndpoints();
+        admin.MapAdminRecordsEndpoints(); // the searchable lists, their CSV exports, and the employee lookup
 
         admin.MapGet("/stats", async (AdminStatsService stats, CancellationToken ct) =>
         {
@@ -44,16 +45,6 @@ public static class AdminEndpoints
 
     private static void MapLedger(RouteGroupBuilder admin)
     {
-        admin.MapGet("/transactions", async (int? employeeId, string? type, int? eventId, string? q, int? page, int? pageSize, PointHubDbContext db, CancellationToken ct) =>
-        {
-            var query = db.PointTransactions.AsNoTracking();
-            if (employeeId is not null) query = query.Where(t => t.EmployeeId == employeeId);
-            if (QueryEnum.Parse<PointTransactionType>(type) is { } typeFilter) query = query.Where(t => t.Type == typeFilter);
-            if (eventId is not null) query = query.Where(t => t.EventId == eventId);
-            if (!string.IsNullOrWhiteSpace(q)) query = query.Where(t => t.Employee.EmployeeNo.Contains(q) || t.Employee.DisplayName.Contains(q));
-            return await query.OrderByDescending(t => t.Id).Select(TransactionDto.Projection).ToPagedAsync(page, pageSize, ct);
-        }).RequireAuthorization(Policies.AdminRead);
-
         admin.MapPost("/transactions/{id:long}/revert", async (long id, ReasonRequest request, ClaimsPrincipal user, PointLedger ledger, PointHubDbContext db, CancellationToken ct) =>
         {
             var reversal = await ledger.RevertAsync(id, request.Reason.Trim(), user.EmployeeId(), ct);
@@ -70,16 +61,6 @@ public static class AdminEndpoints
 
     private static void MapEmployees(RouteGroupBuilder admin)
     {
-        admin.MapGet("/employees", async (string? q, int? page, int? pageSize, PointHubDbContext db, CancellationToken ct) =>
-        {
-            var query = db.Employees.AsNoTracking().Include(e => e.Account).Include(e => e.Cards).AsSplitQuery();
-            if (!string.IsNullOrWhiteSpace(q))
-                query = query.Where(e => e.EmployeeNo.Contains(q) || e.DisplayName.Contains(q) || e.Email.Contains(q));
-
-            var result = await query.OrderBy(e => e.EmployeeNo).ToPagedAsync(page, pageSize, ct);
-            return new Paged<EmployeeDto>(result.Items.Select(EmployeeDto.From).ToList(), result.Total, result.Page, result.PageSize);
-        }).RequireAuthorization(Policies.AdminRead);
-
         // Roles: system admin, event admin, gift admin, auditor. An empty list makes the person a normal user.
         admin.MapPut("/employees/{id:int}/roles", async (int id, RolesRequest request, ClaimsPrincipal user, PointHubDbContext db, TimeProvider clock, CancellationToken ct) =>
         {
@@ -125,8 +106,8 @@ public static class AdminEndpoints
 
     private static void MapGifts(RouteGroupBuilder gifts)
     {
-        gifts.MapGet("/gifts", async (PointHubDbContext db, CancellationToken ct) =>
-            await db.Gifts.AsNoTracking().OrderBy(g => g.Id).Select(GiftDto.Projection).ToListAsync(ct));
+        gifts.MapGet("/gifts", async (ClaimsPrincipal user, PointHubDbContext db, CancellationToken ct) =>
+            await db.Gifts.AsNoTracking().OrderBy(g => g.Id).Select(GiftDto.ProjectionFor(db.Redemptions, user.EmployeeId())).ToListAsync(ct));
 
         gifts.MapPost("/gifts", async (GiftInput input, ClaimsPrincipal user, PointHubDbContext db, TimeProvider clock, CancellationToken ct) =>
         {
@@ -142,7 +123,7 @@ public static class AdminEndpoints
             await db.SaveChangesAsync(ct);
             db.Audit(user.EmployeeId(), "gift.create", nameof(Gift), gift.Id, gift.Name.En, clock);
             await db.SaveChangesAsync(ct);
-            return await GiftAsync(db, gift.Id, ct);
+            return await GiftAsync(db, gift.Id, user.EmployeeId(), ct);
         });
 
         gifts.MapPut("/gifts/{id:int}", async (int id, GiftInput input, ClaimsPrincipal user, PointHubDbContext db, TimeProvider clock, CancellationToken ct) =>
@@ -151,13 +132,27 @@ public static class AdminEndpoints
             Apply(input, gift);
             db.Audit(user.EmployeeId(), "gift.update", nameof(Gift), gift.Id, $"{gift.Name.En}: {gift.PointCost} points, active {gift.IsActive}, limit {gift.PerEmployeeLimit?.ToString() ?? "none"}", clock);
             await db.SaveChangesAsync(ct);
-            return Results.Ok(await GiftAsync(db, id, ct));
+            return Results.Ok(await GiftAsync(db, id, user.EmployeeId(), ct));
+        });
+
+        // The quick on/off switch. Off hides the gift from the catalogue and blocks new claims only:
+        // claims that already exist are untouched and can still be handed over, cancelled or refunded.
+        gifts.MapPut("/gifts/{id:int}/active", async (int id, ActiveRequest request, ClaimsPrincipal user, PointHubDbContext db, TimeProvider clock, CancellationToken ct) =>
+        {
+            if (await db.Gifts.FirstOrDefaultAsync(g => g.Id == id, ct) is not { } gift) return ApiProblem.NotFound("Gift");
+            if (gift.IsActive != request.IsActive)
+            {
+                gift.IsActive = request.IsActive;
+                db.Audit(user.EmployeeId(), request.IsActive ? "gift.enable" : "gift.disable", nameof(Gift), gift.Id, gift.Name.En, clock);
+                await db.SaveChangesAsync(ct);
+            }
+            return Results.Ok(await GiftAsync(db, id, user.EmployeeId(), ct));
         });
 
         gifts.MapPost("/gifts/{id:int}/stock", async (int id, StockRequest request, ClaimsPrincipal user, RedemptionService redemptions, PointHubDbContext db, CancellationToken ct) =>
         {
             await redemptions.AdjustStockAsync(id, request.Delta, request.Reason.Trim(), user.EmployeeId(), ct);
-            return await GiftAsync(db, id, ct);
+            return await GiftAsync(db, id, user.EmployeeId(), ct);
         });
 
         // Pictures: normalised to one square frame and stored as flat files (see GiftImageService).
@@ -172,29 +167,19 @@ public static class AdminEndpoints
             {
                 foreach (var stream in streams) await stream.DisposeAsync();
             }
-            return await GiftAsync(db, id, ct);
+            return await GiftAsync(db, id, user.EmployeeId(), ct);
         }).DisableAntiforgery(); // CSRF is covered by the X-Requested-With check on every write
 
         gifts.MapDelete("/gifts/{id:int}/images/{imageId:guid}", async (int id, Guid imageId, ClaimsPrincipal user, GiftImageService images, PointHubDbContext db, CancellationToken ct) =>
         {
             await images.RemoveAsync(id, imageId, user.EmployeeId(), ct);
-            return await GiftAsync(db, id, ct);
+            return await GiftAsync(db, id, user.EmployeeId(), ct);
         });
 
-        gifts.MapPut("/gifts/{id:int}/images/order", async (int id, ImageOrderRequest request, GiftImageService images, PointHubDbContext db, CancellationToken ct) =>
+        gifts.MapPut("/gifts/{id:int}/images/order", async (int id, ImageOrderRequest request, ClaimsPrincipal user, GiftImageService images, PointHubDbContext db, CancellationToken ct) =>
         {
             await images.ReorderAsync(id, request.ImageIds, ct);
-            return await GiftAsync(db, id, ct);
-        });
-
-        // Claims. `q` matches the employee number or name, `giftId` narrows to one gift.
-        gifts.MapGet("/redemptions", async (string? status, string? q, int? giftId, int? page, int? pageSize, PointHubDbContext db, CancellationToken ct) =>
-        {
-            var filter = QueryEnum.Parse<RedemptionStatus>(status);
-            var query = db.Redemptions.AsNoTracking().Where(r => filter == null || r.Status == filter);
-            if (giftId is not null) query = query.Where(r => r.GiftId == giftId);
-            if (!string.IsNullOrWhiteSpace(q)) query = query.Where(r => r.Employee.EmployeeNo.Contains(q) || r.Employee.DisplayName.Contains(q));
-            return await query.OrderByDescending(r => r.Id).Select(RedemptionDto.Projection).ToPagedAsync(page, pageSize, ct);
+            return await GiftAsync(db, id, user.EmployeeId(), ct);
         });
 
         gifts.MapPost("/redemptions/{id:int}/fulfill", async (int id, ClaimsPrincipal user, RedemptionService redemptions, PointHubDbContext db, CancellationToken ct) =>
@@ -206,6 +191,13 @@ public static class AdminEndpoints
         gifts.MapPost("/redemptions/{id:int}/reopen", async (int id, ClaimsPrincipal user, RedemptionService redemptions, PointHubDbContext db, CancellationToken ct) =>
         {
             await redemptions.ReopenAsync(id, user.EmployeeId(), ct);
+            return await RedemptionAsync(db, id, ct);
+        });
+
+        // After hand-over: the gift is taken back, the points return to the employee, stock is restored if asked.
+        gifts.MapPost("/redemptions/{id:int}/refund", async (int id, RefundRequest request, ClaimsPrincipal user, RedemptionService redemptions, PointHubDbContext db, CancellationToken ct) =>
+        {
+            await redemptions.RefundAsync(id, user.EmployeeId(), request.Reason.Trim(), request.Restock, ct);
             return await RedemptionAsync(db, id, ct);
         });
 
@@ -262,8 +254,8 @@ public static class AdminEndpoints
         gift.PerEmployeeLimit = input.PerEmployeeLimit;
     }
 
-    private static Task<GiftDto> GiftAsync(PointHubDbContext db, int id, CancellationToken ct) =>
-        db.Gifts.AsNoTracking().Where(g => g.Id == id).Select(GiftDto.Projection).SingleAsync(ct);
+    private static Task<GiftDto> GiftAsync(PointHubDbContext db, int id, int callerId, CancellationToken ct) =>
+        db.Gifts.AsNoTracking().Where(g => g.Id == id).Select(GiftDto.ProjectionFor(db.Redemptions, callerId)).SingleAsync(ct);
 
     private static Task<TransactionDto> TransactionAsync(PointHubDbContext db, long id, CancellationToken ct) =>
         db.PointTransactions.AsNoTracking().Where(t => t.Id == id).Select(TransactionDto.Projection).SingleAsync(ct);

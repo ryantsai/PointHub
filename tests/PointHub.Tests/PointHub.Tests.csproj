@@ -18,6 +18,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\PointHub.Domain\PointHub.Domain.csproj" />
     <ProjectReference Include="..\..\src\PointHub.Infrastructure\PointHub.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\PointHub.Api\PointHub.Api.csproj" />
   </ItemGroup>
 
 </Project>

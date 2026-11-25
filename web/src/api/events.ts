@@ -3,8 +3,13 @@ import { api } from './client';
 import { keys, pointKeys } from './keys';
 import type { CheckIn, CheckInPreview, EventSummary } from './types';
 
-export function useEvents() {
-  return useQuery({ queryKey: keys.events, queryFn: () => api.get<EventSummary[]>('/api/events') });
+/** Open events. `q` is searched by the server (title, description, location; every word, any language). */
+export function useEvents(q = '') {
+  return useQuery({
+    queryKey: q === '' ? keys.events : keys.eventSearch(q),
+    queryFn: () => api.get<EventSummary[]>('/api/events', { q }),
+    placeholderData: (previous) => previous,
+  });
 }
 
 /**
@@ -26,6 +31,7 @@ export function useSelfCheckIn(token: string, code: string | null) {
     onSettled: () => {
       void qc.invalidateQueries({ queryKey: keys.checkInPreview(token, code) });
       void qc.invalidateQueries({ queryKey: keys.events });
+      void qc.invalidateQueries({ queryKey: keys.adminCheckIns() });
       for (const key of pointKeys) void qc.invalidateQueries({ queryKey: key });
     },
   });

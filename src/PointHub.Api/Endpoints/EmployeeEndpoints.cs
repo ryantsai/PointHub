@@ -17,11 +17,11 @@ public static class EmployeeEndpoints
     {
         var group = api.MapGroup("").RequireAuthorization();
 
-        group.MapGet("/me/points", async (int? page, int? pageSize, ClaimsPrincipal user, PointHubDbContext db, CancellationToken ct) =>
+        group.MapGet("/me/points", async (string? q, int? page, int? pageSize, ClaimsPrincipal user, PointHubDbContext db, CancellationToken ct) =>
         {
             var me = user.EmployeeId();
             var account = await db.PointAccounts.AsNoTracking().SingleAsync(a => a.EmployeeId == me, ct);
-            var transactions = await db.PointTransactions.AsNoTracking().Where(t => t.EmployeeId == me)
+            var transactions = await db.PointTransactions.AsNoTracking().Where(t => t.EmployeeId == me).Matching(q)
                 .OrderByDescending(t => t.Id).Select(TransactionDto.Projection).ToPagedAsync(page, pageSize, ct);
             return new MyPointsDto(account.Balance, account.LifetimeEarned, account.LifetimeSpent, transactions);
         });
@@ -38,8 +38,8 @@ public static class EmployeeEndpoints
             await db.Redemptions.AsNoTracking().Where(r => r.EmployeeId == user.EmployeeId())
                 .OrderByDescending(r => r.Id).Select(RedemptionDto.Projection).Take(200).ToListAsync(ct));
 
-        group.MapGet("/events", async (ClaimsPrincipal user, PointHubDbContext db, CancellationToken ct) =>
-            await db.Events.AsNoTracking().Where(e => e.Status == EventStatus.Open)
+        group.MapGet("/events", async (string? q, ClaimsPrincipal user, PointHubDbContext db, CancellationToken ct) =>
+            await db.Events.AsNoTracking().Where(e => e.Status == EventStatus.Open).Matching(q)
                 .OrderBy(e => e.StartsAt).Select(EventSummaryDto.ProjectionFor(user.EmployeeId())).ToListAsync(ct));
 
         // `k` is the rotating code from the QR; it is only checked for events in rotating mode.
@@ -64,8 +64,8 @@ public static class EmployeeEndpoints
             return Results.Ok(await db.CheckInDtoAsync(checkIn.Id, ct));
         });
 
-        group.MapGet("/gifts", async (PointHubDbContext db, CancellationToken ct) =>
-            await db.Gifts.AsNoTracking().Where(g => g.IsActive).OrderBy(g => g.PointCost).Select(GiftDto.Projection).ToListAsync(ct));
+        group.MapGet("/gifts", async (string? q, ClaimsPrincipal user, PointHubDbContext db, CancellationToken ct) =>
+            await db.Gifts.AsNoTracking().Where(g => g.IsActive).Matching(q).OrderBy(g => g.PointCost).Select(GiftDto.ProjectionFor(db.Redemptions, user.EmployeeId())).ToListAsync(ct));
 
         group.MapPost("/gifts/{id:int}/redeem", async (int id, RedeemRequest request, ClaimsPrincipal user, PointHubDbContext db, RedemptionService redemptions, CancellationToken ct) =>
         {

@@ -155,6 +155,15 @@ public sealed class DevSeeder(PointHubDbContext db, CheckInService checkIns, Red
             }, ct);
         }
 
+        // One gift that was handed over and later taken back, so the "refunded" state has an example.
+        Redemption returned = null!;
+        await BackdatedAsync(now.AddDays(-20), async () =>
+        {
+            returned = await redemptions.RedeemAsync(mug.Id, staff[6].Id, 1, ct);
+            await redemptions.FulfillAsync(returned.Id, giftManager.Id, ct);
+        }, ct);
+        await BackdatedAsync(now.AddDays(-17), () => redemptions.RefundAsync(returned.Id, giftManager.Id, "Arrived chipped; returned to the gift desk", restock: false, ct), ct);
+
         // Drawn placeholder pictures in different shapes, to show the gallery and the size normalisation.
         var (blue, green) = (new SKColor(0x19, 0x9E, 0xCF), new SKColor(0x75, 0xB4, 0x2B));
         var (amber, rose) = (new SKColor(0xF5, 0x9E, 0x0B), new SKColor(0xE1, 0x1D, 0x48));

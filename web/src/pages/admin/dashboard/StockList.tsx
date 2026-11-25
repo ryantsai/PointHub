@@ -66,7 +66,7 @@ function StockItem({ gift, editable }: { gift: Gift; editable: boolean }) {
           </Progress.Root>
           {!gift.isActive && (
             <Badge colorPalette="gray" variant="subtle" size="sm" px="2">
-              {t('admin.gifts.hidden')}
+              {t('admin.gifts.disabledChip')}
             </Badge>
           )}
           {out ? (

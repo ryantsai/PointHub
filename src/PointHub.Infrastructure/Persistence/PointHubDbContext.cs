@@ -32,6 +32,28 @@ public class PointHubDbContext(DbContextOptions<PointHubDbContext> options) : Db
     public DbSet<EmailTemplate> EmailTemplates => Set<EmailTemplate>();
     public DbSet<EmailMessage> EmailMessages => Set<EmailMessage>();
 
+    public override int SaveChanges(bool acceptAllChangesOnSuccess)
+    {
+        RefreshSearchText();
+        return base.SaveChanges(acceptAllChangesOnSuccess);
+    }
+
+    public override Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
+    {
+        RefreshSearchText();
+        return base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+    }
+
+    /// <summary>Keeps the search columns in step with the wording they are built from, whoever changed it.</summary>
+    private void RefreshSearchText()
+    {
+        foreach (var entry in ChangeTracker.Entries().Where(e => e.State is EntityState.Added or EntityState.Modified))
+        {
+            if (entry.Entity is Event ev) ev.RefreshSearchText();
+            else if (entry.Entity is Gift gift) gift.RefreshSearchText();
+        }
+    }
+
     protected override void ConfigureConventions(ModelConfigurationBuilder configuration)
     {
         // Enums are stored by name so the tables stay readable in SSMS and reports.

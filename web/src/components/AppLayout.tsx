@@ -1,5 +1,5 @@
 import { Avatar, Box, Card, Center, Flex, IconButton, Menu, Portal, SegmentGroup, Text } from '@chakra-ui/react';
-import { CalendarDays, ClipboardCheck, Gift, History, House, KeyRound, LayoutDashboard, LogOut, Mail, Package, Palette, ReceiptText, Star, Users, type LucideIcon } from 'lucide-react';
+import { CalendarCheck, CalendarDays, ClipboardCheck, Gift, History, House, KeyRound, LayoutDashboard, LogOut, Mail, Package, Palette, ReceiptText, Star, Users, type LucideIcon } from 'lucide-react';
 import { motion } from 'motion/react';
 import { Suspense, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -42,21 +42,21 @@ function useEmployeeNav(): NavItem[] {
 function useManagementNav(me: Me): NavItem[] {
   const { t } = useTranslation();
   // Claims waiting to be handed over; only asked for by people who can see the claims page.
-  const openClaims = useRedemptionCount({ status: 'requested' }, can.manageGifts(me)).data ?? 0;
+  const openClaims = useRedemptionCount({ status: 'requested' }, can.viewClaims(me)).data ?? 0;
   return [
     ...(can.viewAdmin(me) ? [{ to: '/admin', label: t('nav.adminDashboard'), icon: LayoutDashboard, end: true }] : []),
     ...(can.host(me) ? [{ to: '/host/events', label: t('nav.hostEvents'), icon: CalendarDays }] : []),
     ...(can.viewAdmin(me)
       ? [
           { to: '/admin/ledger', label: t('nav.ledger'), icon: ReceiptText },
+          { to: '/admin/attendance', label: t('nav.attendance'), icon: CalendarCheck },
           { to: '/admin/employees', label: t('nav.employees'), icon: Users },
         ]
       : []),
-    ...(can.manageGifts(me)
-      ? [
-          { to: '/admin/gifts', label: t('nav.giftAdmin'), icon: Package },
-          { to: '/admin/claims', label: t('nav.claims'), icon: ClipboardCheck, badge: { count: openClaims, label: t('nav.openClaims', { count: openClaims }) } },
-        ]
+    ...(can.manageGifts(me) ? [{ to: '/admin/gifts', label: t('nav.giftAdmin'), icon: Package }] : []),
+    // Auditors read the claims list too; only people who manage gifts act on it.
+    ...(can.viewClaims(me)
+      ? [{ to: '/admin/claims', label: t('nav.claims'), icon: ClipboardCheck, badge: { count: openClaims, label: t('nav.openClaims', { count: openClaims }) } }]
       : []),
     ...(can.admin(me)
       ? [

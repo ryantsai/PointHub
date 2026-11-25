@@ -1,4 +1,4 @@
-import { Box, Button, Flex, Grid, NumberInput, SegmentGroup, Text } from '@chakra-ui/react';
+import { Box, Button, Flex, Grid, Input, SegmentGroup, Text } from '@chakra-ui/react';
 import { Boxes, Images, PencilLine } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -11,6 +11,7 @@ import { Modal } from '../../components/ui/Modal';
 import { Notice } from '../../components/ui/Notice';
 import { Panel } from '../../components/ui/Panel';
 import { useErrorMessage, useFormat } from '../../i18n/hooks';
+import { MAX_PER_EMPLOYEE_LIMIT } from '../../lib/gifts';
 import { notifySuccess } from '../../lib/notify';
 import { GiftImagesEditor } from './GiftImagesEditor';
 import { GiftStockForm } from './GiftStockForm';
@@ -20,16 +21,34 @@ const EMPTY_TEXT: LocalizedText = { en: '', ja: null, zhHant: null };
 
 type LimitMode = 'none' | 'limited';
 
+type LimitProblem = 'required' | 'invalid' | 'tooLarge';
+
+/**
+ * Reads what was typed as a per-person limit: any whole number from 1 up. Full-width digits (Japanese and
+ * Chinese keyboards) count as digits; 0, negative numbers, decimals and anything else are refused, not rounded.
+ */
+function parseLimit(text: string): { value: number } | { problem: LimitProblem } {
+  const digits = text.normalize('NFKC').trim();
+  if (digits === '') return { problem: 'required' };
+  if (!/^\d+$/.test(digits)) return { problem: 'invalid' };
+  const value = Number(digits);
+  if (value < 1) return { problem: 'invalid' };
+  if (value > MAX_PER_EMPLOYEE_LIMIT) return { problem: 'tooLarge' };
+  return { value };
+}
+
 interface LimitFieldProps {
   mode: LimitMode;
-  count: number | '';
+  /** The number as typed. */
+  count: string;
   onModeChange: (mode: LimitMode) => void;
-  onCountChange: (count: number | '') => void;
+  onCountChange: (count: string) => void;
+  onCountBlur: () => void;
   error: string | null;
 }
 
 /** "No limit" or a number: how many of this gift one person may claim in total. */
-function LimitField({ mode, count, onModeChange, onCountChange, error }: LimitFieldProps) {
+function LimitField({ mode, count, onModeChange, onCountChange, onCountBlur, error }: LimitFieldProps) {
   const { t } = useTranslation();
   const label = t('admin.gifts.fields.perEmployeeLimit');
   return (
@@ -46,18 +65,17 @@ function LimitField({ mode, count, onModeChange, onCountChange, error }: LimitFi
         </SegmentGroup.Root>
         {mode === 'limited' && (
           <Flex align="center" gap="2">
-            <NumberInput.Root
-              w="28"
-              value={count === '' ? '' : String(count)}
-              onValueChange={(details) => onCountChange(Number.isNaN(details.valueAsNumber) ? '' : details.valueAsNumber)}
-              min={1}
-              formatOptions={{ maximumFractionDigits: 0, useGrouping: false }}
+            {/* A plain text box, not a stepper: 250 is typed as easily as 2, and a wrong value gets a message instead of being silently changed. */}
+            <Input
+              w="32"
+              value={count}
+              onChange={(event) => onCountChange(event.currentTarget.value)}
+              onBlur={onCountBlur}
               inputMode="numeric"
-              clampValueOnBlur
-            >
-              <NumberInput.Control />
-              <NumberInput.Input aria-label={t('admin.gifts.limit.count')} />
-            </NumberInput.Root>
+              autoComplete="off"
+              fontVariantNumeric="tabular-nums"
+              aria-label={t('admin.gifts.limit.count')}
+            />
             <Text fontSize="sm" fontWeight="semibold" color="fg.muted" whiteSpace="nowrap">
               {t('admin.gifts.limit.unit')}
             </Text>
@@ -87,25 +105,27 @@ export function GiftEditor({ gift, onCreated, onClose }: GiftEditorProps) {
   const [pointCost, setPointCost] = useState<number | ''>(gift?.pointCost ?? '');
   const [initialStock, setInitialStock] = useState<number | ''>(0);
   const [limitMode, setLimitMode] = useState<LimitMode>(gift?.perEmployeeLimit != null ? 'limited' : 'none');
-  const [limitCount, setLimitCount] = useState<number | ''>(gift?.perEmployeeLimit ?? 1);
+  const [limitText, setLimitText] = useState(String(gift?.perEmployeeLimit ?? 1));
+  const [limitTouched, setLimitTouched] = useState(false);
   const [isActive, setIsActive] = useState(gift?.isActive ?? true);
   const [submitted, setSubmitted] = useState(false);
   const [stocking, setStocking] = useState(false);
 
   const nameError = submitted && name.en.trim() === '' ? t('admin.gifts.nameRequired') : null;
   const costError = submitted && pointCost === '' ? t('app.required') : null;
-  const limitError = submitted && limitMode === 'limited' && (limitCount === '' || limitCount < 1) ? t('admin.gifts.limit.required') : null;
+  const limit = limitMode === 'limited' ? parseLimit(limitText) : { value: null };
+  const limitError = 'problem' in limit && (submitted || limitTouched) ? t(`admin.gifts.limit.${limit.problem}`, { max: format.number(MAX_PER_EMPLOYEE_LIMIT) }) : null;
 
   const submit = () => {
     setSubmitted(true);
     if (name.en.trim() === '' || pointCost === '') return;
-    if (limitMode === 'limited' && (limitCount === '' || limitCount < 1)) return;
+    if ('problem' in limit) return;
     const input: GiftInput = {
       name,
       description: description.en.trim() === '' ? null : description,
       pointCost,
       isActive,
-      perEmployeeLimit: limitMode === 'limited' && limitCount !== '' ? limitCount : null,
+      perEmployeeLimit: limit.value,
       ...(gift === null ? { initialStock: initialStock === '' ? 0 : initialStock } : {}),
     };
     save.mutate(input, {
@@ -141,7 +161,7 @@ export function GiftEditor({ gift, onCreated, onClose }: GiftEditorProps) {
               </FormField>
             )}
           </Grid>
-          <LimitField mode={limitMode} count={limitCount} onModeChange={setLimitMode} onCountChange={setLimitCount} error={limitError} />
+          <LimitField mode={limitMode} count={limitText} onModeChange={setLimitMode} onCountChange={setLimitText} onCountBlur={() => setLimitTouched(true)} error={limitError} />
           <SwitchField label={t('admin.gifts.fields.isActive')} help={t('admin.gifts.fields.isActiveHelp')} value={isActive} onChange={setIsActive} />
           {save.error && <Notice tone="error" title={errorMessage(save.error)} />}
           <Flex justify="flex-end" gap="2" wrap="wrap">

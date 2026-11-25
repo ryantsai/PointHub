@@ -14,7 +14,9 @@ export const can = {
   host: (me: Me) => has(me, 'eventAdmin'),
   /** Gift catalog, stock and claims. */
   manageGifts: (me: Me) => has(me, 'giftAdmin'),
-  /** Read the ledger, employees and audit log (auditors are read-only). */
+  /** Open the claims list: gift admins act on it, auditors only read and export. */
+  viewClaims: (me: Me) => has(me, 'giftAdmin') || has(me, 'auditor'),
+  /** Read the ledger, attendance, employees and audit log (auditors are read-only). */
   viewAdmin: (me: Me) => has(me, 'auditor'),
   /** Revert, adjust, register cards, API keys, site theme. */
   admin: (me: Me) => me.roles.includes('systemAdmin'),

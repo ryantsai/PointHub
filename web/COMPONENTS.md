@@ -4,7 +4,7 @@ The app is built on Chakra UI v3 in the "Arcade" design (design source: `design-
 
 ## Rules that hold everywhere
 
-- **Roles** (contract): `systemAdmin | eventAdmin | giftAdmin | auditor`; no role = normal employee. Never test role names in pages: use `can.host / can.manageGifts / can.viewAdmin / can.admin` from `src/lib/roles.ts` (names unchanged) and `<RequireRole permission>`. Labels: `role.*` in the locale files; `<RoleBadges roles>`.
+- **Roles** (contract): `systemAdmin | eventAdmin | giftAdmin | auditor`; no role = normal employee. Never test role names in pages: use `can.host / can.manageGifts / can.viewClaims / can.viewAdmin / can.admin` from `src/lib/roles.ts` and `<RequireRole permission>`. `can.viewClaims` opens the claims list (gift admins, system admins, and auditors read-only); what a reader may not do is not drawn (`can.manageGifts` decides the buttons). Labels: `role.*` in the locale files; `<RoleBadges roles>`.
 - English copy calls a redemption a **claim** ("My claims", "Cancel claim"); the button verb stays "Redeem". Type and field names stay `Redemption`.
 - No emoji in the UI. Theme art is pixel-art sprites (see "Sprites"). Icons are `lucide-react`.
 - No class names; style with Chakra props and the semantic tokens.
@@ -26,7 +26,7 @@ The layout follows the "Arcade" design (`design-lab/chakra`): its composition, w
 | What | Import | Use |
 | --- | --- | --- |
 | Page frame, header | `components/Page` | `<Page title subtitle actions>`; omit `title` for a custom hero. `<PageHeader>`, `<Stagger>` / `<StaggerItem>` |
-| Loading / error / empty / pager | `components/states` | `<LoadingBlock />`, `<ErrorBlock error onRetry />`, `<EmptyState message icon? sprite?>`, `<Pager page pageSize total onChange />` |
+| Loading / error / empty / pager | `components/states` | `<LoadingBlock />`, `<ErrorBlock error onRetry />`, `<EmptyState message icon? sprite?>`, `<NoMatch q onClear />` (a search that found nothing, with "Clear search"), `<Pager page pageSize total onChange />` |
 | Status chips | `components/badges` | `EventStatusBadge`, `CheckInStatusBadge` (value may be `null`), `CheckInMethodBadge`, `RedemptionStatusBadge`, `TransactionTypeBadge`, `RosterMatchBadge`: `<X value size? />`; `<RoleBadges roles />` |
 | Card | `components/ui/Panel` | `<Panel padding? gap?>` – sticker card (was `Card withBorder` / `Paper withBorder`) |
 | Hero surface | `components/ui/HeroPanel` | `<HeroPanel>` – gradient, white text (kiosk / projector screens; replaces `.ph-hero`) |
@@ -34,22 +34,26 @@ The layout follows the "Arcade" design (`design-lab/chakra`): its composition, w
 | Message box | `components/ui/Notice` | `<Notice tone="info\|success\|warning\|error" title?>body</Notice>` |
 | Modal | `components/ui/Modal` | `<Modal opened onClose title footer? size? dismissible?>`; content mounts only while open |
 | Confirm dialog | `lib/confirm` | `openConfirm({ title, children, labels: { confirm, cancel }, danger?, onConfirm })` |
-| Toasts | `lib/notify` | `notifySuccess(msg)`, `notifyError(msg)` (unchanged API) |
+| Toasts | `lib/notify` | `notifySuccess(msg)`, `notifyWarning(msg)` (worked, but not completely: a capped export), `notifyError(msg)` |
 | Form state | `lib/useFormState` | `const form = useFormState({ initialValues, validate })`; `{...form.field('name')}`; `form.onSubmit(fn)`; `form.setErrors` |
 | Fields | `components/ui/fields` | `TextField`, `TextAreaField`, `NumberField` (`number \| ''`), `SelectField` (`data`, `string \| null`), `SwitchField`, `CheckboxField`, `RadioField`, `DateTimeField` (ISO string, `withTime={false}` for a date), `FormField` (wrap anything). All take `label help error required disabled value onChange(value)` |
 | Three-language input | `components/LocalizedInput` | `<LocalizedInput label value onChange error? required? multiline? />` (unchanged) |
-| Data table | `components/ui/DataTable` | `<DataTable columns rows rowKey emptyMessage loading error onRetry stale minWidth />`; `<TableFrame minWidth>` + `tableStyles.ts` for hand-written `Table.Root` |
+| Data table | `components/ui/DataTable` | `<DataTable columns rows rowKey emptyMessage loading error onRetry stale rowMuted? onRowClick? minWidth />` (`rowMuted(row)`: quieter surface and text for a switched-off row, e.g. a disabled gift; `onRowClick(row)`: the whole row opens something, links and buttons inside keep their own meaning: give the row a real link too, for the keyboard); `<TableFrame minWidth>` + `tableStyles.ts` for hand-written `Table.Root` |
 | Tabs | `components/ui/SimpleTabs` | `<SimpleTabs tabs={[{ value, label, icon?, badge?, content }]} value? onChange? />`; only the open panel is mounted |
 | File drop zone | `components/ui/FileDropZone` | `<FileDropZone onDrop(files) onReject(refusedFiles) accept maxSize maxFiles loading title hint />` |
-| Search box | `components/ui/SearchField` | `<SearchField value onChange label />` – magnifier, clear button; takes `InputGroup` layout props (`flex`, `maxW`). Debounce with `useDebouncedValue` |
+| Search box | `components/ui/SearchField` | `<SearchField value onChange label />` – magnifier, clear button; takes `InputGroup` layout props (`flex`, `maxW`). For a list, bind it to the URL: `const search = useUrlSearch('q')` → `value={search.text} onChange={search.onChange}`, and ask the server for `search.q` (debounced 250 ms; the server does the matching, never filter client-side) |
+| Filters in the URL | `lib/urlFilters` | `const { params, patch } = useUrlFilters()`: the query string as filter state. `patch({ type })` sets, `patch({ type: null })` removes, and any change but `page` drops `page`. Read with `readPage / readId / readDate / readEnum(params, key, …)`. `useUrlSearch(key?)` is the search box on top of it. Every admin list keeps `q`, dates, type / status and the page there |
+| Date range | `components/ui/DateRange` | `<DateRange from to onChange({ from, to }) />` – two native date pickers with plain `YYYY-MM-DD` values (the API's `from` / `to`); reports once typing has settled |
+| Export CSV | `components/ExportButton` | `<ExportButton path="/api/admin/…/export" filters={sameFiltersAsTheList} />` – adds `locale`, saves under the server's file name, toasts the result (saved / capped at 50 000 rows / refused). Built on `downloadFile(path, query)` in `api/client` |
 | Number tween | `components/AnimatedNumber` | `<AnimatedNumber value from? format? />` |
 | Result moment | `components/StatusBurst`, `components/ui/Burst` | `<StatusBurst tone="success\|pending\|error" size? />`; `<Burst trigger={n} />` inside a `position: relative` box |
 | Progress ring | `components/ui/LevelRing` | `<LevelRing percent label top? bottom?>centre</LevelRing>` (on a hero) |
-| Gift catalogue | `components/GiftCatalog` | `<GiftCatalog limit? columns? />` – the cards with redeem / "need N more" / out of stock / limit reached, the confirm dialog and the reward moment on the card. Used by the home page and `/gifts`. Helpers in `lib/gifts`: `remainingAllowance`, `nextGoal`, `LOW_STOCK` |
+| Gift catalogue | `components/GiftCatalog` | `<GiftCatalog limit? columns? searchParam? />` – a search box (bound to the URL key `searchParam`, default `q`) above the cards with redeem / "need N more" / out of stock / limit reached, the confirm dialog and the reward moment on the card. Used by the home page and `/gifts`. The per-person limit comes from the gift itself (`perEmployeeLimit - claimedByMe`), not from the claims list. Helpers in `lib/gifts`: `limitLeft`, `maxClaimable`, `nextGoal`, `LOW_STOCK`, `MAX_PER_EMPLOYEE_LIMIT` |
 | QR scanner | `components/CheckInScanner` | `<CheckInScanner opened onClose />` – camera + `BarcodeDetector`; opens only what `parseCheckInLink` (`lib/checkInLink`) accepts; shows a fallback where it cannot scan; the camera stops when the dialog closes |
 | Gift pictures | `components/GiftGallery` | `<GiftGallery images alt dimmed? />`, `<GiftThumb images size? shape? />` (`shape="square"`: neutral framed tile for tables and lists) |
 | Upload with progress | `api/client` | `uploadWithProgress<T>(path, formData, onProgress)` – multipart POST over XHR, same `ApiError`s as `api.*` (see `api/gifts` `useUploadGiftImage`) |
-| Admin page parts | `pages/admin/parts` | `<TableBlock>` (toolbar + table + pager), `<Toolbar>`, `<TwoLine primary secondary>`, `<LinkButton>`, `<Form onSubmit>` (column form, `noValidate`), `<FormActions>` |
+| Admin page parts | `pages/admin/parts` | `<TableBlock>` (toolbar + table + pager), `<Toolbar actions?>` (`actions`: Export CSV, pushed to the far end), `<FilterChip label onClear>`, `<ClearFilters active onClear>`, `<TwoLine primary secondary>`, `<LinkButton>` (in-table filter), `<TextLink to>` (opens a page), `<EmployeeLink id>` (the name → lookup page, plain text for people who may not open it), `<Form onSubmit>` (column form, `noValidate`), `<FormActions>` |
+| Admin lists | `pages/admin/LedgerTable`, `AttendanceTable`, `ClaimsList` | `<X filters page pageSize onPage emptyMessage showEmployee? />` – table (or claim rows) + pager for one filter set. Each is used by its own page and, with `employeeId` and `showEmployee={false}`, by a tab of the lookup page (`EmployeeLookupPage`). `ClaimsList` with `filters.status === null` mixes every status and says it on each row |
 | Hooks | `lib/hooks` | `useDisclosure()`, `useDebouncedValue(value, ms)`, `useNow(intervalMs?)` (the time as state: never call `Date.now()` while rendering) |
 | Shell sizes | `lib/layout` | `HEADER_HEIGHT`, `TAB_BAR_HEIGHT` – for anything sticky or fixed that has to clear the top bar or the phone tab bar |
 | Charts | `@chakra-ui/charts` + `recharts` | Only inside the admin dashboard chunk. `useChart({ data, series: [{ name, color: 'brand.solid' }] })`, `chart.color('fg.muted')` for axes and grid: tokens become CSS variables, so a chart follows the theme and the colour scheme (see `pages/admin/dashboard/TrendChart`) |
@@ -136,5 +140,7 @@ Theme = `<html data-theme="<ThemeKey>">`, scheme = `.dark` / `.light` on `<html>
 - `motion.*` elements reserve `onDragStart` / `onDragEnd` for their own gestures: put native HTML5 drag-and-drop (`draggable`, `onDragStart` …) on a plain element inside the motion element (see `admin/GiftImagesEditor`).
 - `Flex as="ul"` keeps the `div` ref type. For a ref on a list use `<Flex asChild …><ul ref={ref}>…</ul></Flex>` (see the management nav in `AppLayout`).
 - `useEffectEvent` (React 19.2) is the way to read the latest props inside a long-lived effect without restarting it (the scanner's camera loop).
+- `<BrowserRouter>` applies a URL change as a transition, a moment after the event. A controlled field whose value comes straight from `useSearchParams` snaps back to its old value in between (and a second change made right away is built on the old query string). Use `useUrlFilters` / `useUrlSearch` (`lib/urlFilters`): they show the change at once and build each change on the address bar.
+- A native date field reports a year typed on the keyboard digit by digit (`0002-…`, `0020-…`): do not send every `onChange` to the server (`DateRange` waits for the typing to settle).
 - A sandboxed `<iframe sandbox="" srcDoc>`: mount it only once there is content. Mounted with an empty `srcDoc` and filled later, it stayed blank in the desktop app's browser pane (see `admin/EmailTemplates`).
 - `<AnimatedNumber format>` receives the in-between values of the tween: round inside your formatter, or leave `format` out for whole numbers.

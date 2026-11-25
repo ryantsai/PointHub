@@ -37,7 +37,7 @@ npm run lint
 | `src/components/` | app shell (`AppLayout`), route guards, status chips, page frame, states, gift catalogue, QR scanner |
 | `src/components/ui/` | Arcade building blocks: panel, hero, fields, modal, table, tabs, drop zone, toaster |
 | `src/pages/` | one file per screen; `home/` is the employee home; `host/` and `admin/` are lazy-loaded; `admin/dashboard/` holds the parts of the admin dashboard |
-| `src/lib/` | roles and where each role lands, session context, notifications, confirm dialog, form state, motion presets, check-in link parsing, gift helpers |
+| `src/lib/` | roles and where each role lands, session context, notifications, confirm dialog, form state, filters in the URL (`urlFilters.ts`), motion presets, check-in link parsing, gift helpers |
 
 Routes and who may see them are listed at the top of `src/App.tsx`. Guards only hide pages; the API enforces every rule again.
 
@@ -49,6 +49,7 @@ Routes and who may see them are listed at the top of `src/App.tsx`. Guards only 
 - Files that export components export only components (required for fast refresh, enforced by lint).
 - The React Compiler lint rules are on: no `setState` directly inside an effect, no reading refs during render.
 - Roles are `systemAdmin`, `eventAdmin`, `giftAdmin`, `auditor`; no role is a normal employee. Pages ask `can.*` in `src/lib/roles.ts`, never the role names.
+- Lists are searched, filtered and paged by the server. The search text, dates, type / status and the page live in the page's query string (`src/lib/urlFilters.ts`), so a filtered list can be bookmarked and survives a refresh; changing a filter goes back to page 1.
 - Styling is Chakra style props with semantic tokens (`bg.panel`, `fg.muted`, `brand.solid`, `accent.solid` …), never hex colours. Theme art is pixel-art sprites, never emoji.
 - Motion: springs and variants from `src/lib/motion.ts`; animate `transform` and `opacity` only. `<MotionConfig reducedMotion="user">` and a global CSS rule reduce everything to short fades for people who ask for less motion.
 
@@ -73,6 +74,22 @@ The page composition follows the chosen "Arcade" prototype (`design-lab/chakra`)
 - An auditor sees the tiles, the chart and the stock of the public catalogue. The queue is not drawn for them (the API refuses that list to auditors), and nothing on their dashboard is a button.
 - The page is its own chunk (it carries Recharts) and is warmed up in idle time for the people who can open it; employees never download it.
 - If a call fails, its block shows the translated error with a retry button and the rest of the page still works.
+
+## Search, filters, CSV export and the employee lookup
+
+**Search.** Every search box sends `?q=` to the server after 250 ms of quiet and keeps the previous result on screen (dimmed) until the next one arrives; nothing is filtered in the browser. The server matches every word, in any of the three languages. A search without a hit says "Nothing matches '…'" with a button back to the whole list.
+
+- Employee home (`/`): events (`?events=`), gifts (`?gifts=`) and the person's own history (`?history=`, `GET /api/me/points?q=`). The balance and lifetime totals in that answer are not filtered, so the hero uses the same call. "See all" carries the gift search to `/gifts?q=`.
+- `/gifts`: the catalogue (`?q=`).
+
+**Admin lists.** Ledger (`/admin/ledger`: `q`, `type`, `from`, `to`, plus `employeeId` / `eventId` chips), attendance (`/admin/attendance`: `q`, `status`, `from`, `to`, `eventId`; `GET /api/admin/checkins`, read-only), claims (`/admin/claims`: `status` tab, `q`, `giftId`, `from`, `to`) and employees (`/admin/employees`: `q`). Dates are plain `YYYY-MM-DD` days from the browser's date picker; the server reads them in the site time zone.
+
+- The claims page is also open to auditors, read-only: the same tabs, search and export, no action buttons. Their gift filter lists the public catalogue, because `GET /api/admin/gifts` is refused to them.
+- An employee's name in the ledger, attendance and claims lists opens the lookup page for people who may see it (system admins and auditors).
+
+**Export CSV.** One button (`components/ExportButton`) on every exportable list. It fetches the list's `/export` twin with exactly the filters on screen plus `locale=<UI language>`, saves the answer under the name in `Content-Disposition`, and reports in a toast: saved, cut at 50 000 rows (`X-Export-Truncated: true`), or refused (403, 400 for a date the server does not accept). The claims export covers the open tab.
+
+**Employee lookup (`/admin/employees/:id`).** Opened from a row of the employees list or from a name in another list. Profile and totals come from `GET /api/admin/employees/{id}`; the three tabs (point history, attendance, claims) are the admin lists filtered by `employeeId`, each with its own search and export; the tab, its search and its page are in the URL (`?tab=&q=&page=`). System admins get "Award points" and "Deduct points": a positive amount and a mandatory reason, sent as one signed amount to `POST /api/admin/adjustments`. Deducting more than the balance is allowed; the dialog warns that the balance goes below zero. After the save the dialog shows the balance the server now has, and the totals and the history are refreshed. Auditors see the page without the two buttons and without "Revert". An unknown id shows a "not found" state.
 
 ## Sign-in
 
@@ -161,6 +178,7 @@ Hardware caveats to settle with the real readers and cards:
 ## Not finished
 
 - Verified in a browser against the real API on sample data: sign-in and sign-out, the employee home at phone and desktop width, the admin dashboard as system admin and as auditor (approving a row; the error state with the two calls stubbed to 404), check-in by static link and by rotating code, the live pending → approved switch, redeeming a gift, every event-admin tab, and every admin page as system admin, gift admin and auditor. Not exercised: OIDC sign-in, a real file drag onto the drop zones, mouse drag reorder of gift pictures, and reduced-motion mode in a real browser setting.
+- Search, filters, export and the lookup page were verified the same way, at desktop width and at 375 px: the three employee searches (a Chinese term, a two-word term), ledger and attendance filters with export, claims as gift admin and read-only as auditor, the lookup page with one award and one deduction as system admin and read-only as auditor, and the ledger filters and the lookup page in Japanese and Traditional Chinese. Not exercised: typing a date on a real keyboard and the date picker of a real phone (the fields were filled by script), and a real export of more than 50 000 rows.
 - Levels on the employee home are presentation only (one level per 500 lifetime points); the server knows nothing about them.
 - The QR scanner was exercised in a desktop browser with a simulated camera and detector (accepting a check-in link, ignoring other codes, stopping the stream). It has not been used on a real phone camera. iPhones always get the fallback text, because Safari has no `BarcodeDetector`.
 - Windows sign-in was exercised with a simulated site config (button, hint, the single automatic attempt, `signedOut` and `error=no_account`). The real IIS handshake is untested.
@@ -168,7 +186,9 @@ Hardware caveats to settle with the real readers and cards:
 - The admin dashboard has no ledger table (the prototype does): the ledger is its own page.
 - Web NFC is untested on a real Android device, and the bridge is untested against the real `tools/PointHub.CardBridge` and a physical reader.
 - No unit or end-to-end tests yet.
-- Ledger filter chips show the employee/event id, not the name (no lookup-by-id endpoint).
-- Claim counts on the claims tabs and the nav badge come from list calls with `pageSize=1` (there is no count endpoint), and claim rows take their thumbnail from the gift list.
-- The JavaScript an employee downloads first is about 386 kB gzipped: the entry chunk (228 kB) plus the shared chunks it imports (Chakra, Emotion, Motion, the three locale files). Event-admin and admin pages load on demand; the admin dashboard chunk with the chart library is another 128 kB gzipped. Vite warns about the main chunk size.
+- The employee chip of the ledger and attendance filters shows the person's name (from the lookup endpoint); the event chip still shows the event id, as there is no event lookup an auditor may call.
+- `Transaction` carries no gift name, so a claim row in the ledger or in "Recent activity" shows only its type: a search for a gift name finds the row, but the row cannot say why. (The CSV export has a gift column.)
+- The "export was cut at 50 000 rows" toast was exercised with a simulated response header; the sample data is far smaller than the cap.
+- Claim counts on the claims tabs and the nav badge come from list calls with `pageSize=1` (there is no count endpoint). Claim rows show the picture sent with the claim (`giftImage`), so a disabled gift keeps its picture.
+- The JavaScript an employee downloads first is about 403 kB gzipped: the entry chunk (240 kB) plus the shared chunks it imports (Chakra, Emotion, Motion, the three locale files). Event-admin and admin pages load on demand; the admin dashboard chunk with the chart library is another 128 kB gzipped. Vite warns about the main chunk size.
 - No PWA/offline support; a kiosk that loses its connection shows a network error per tap.

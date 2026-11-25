@@ -2,10 +2,10 @@
 
 Central point management for employee activities: employees earn points by taking part in company events and spend them on gifts.
 
-- **Employees** check in to an event by scanning its QR code / link or tapping their staff badge, watch their balance, and redeem gifts.
+- **Employees** check in to an event by scanning its QR code / link or tapping their staff badge, watch their balance, search events and gifts, and redeem gifts.
 - **Event admins** create events, set the points, import and reconcile participant lists, and approve check-ins.
-- **Gift admins** manage gifts, pictures and stock, and mark claims as fulfilled.
-- **System admins** see every record, revert and adjust points, manage roles, API keys, email templates and the seasonal theme.
+- **Gift admins** manage gifts, pictures, stock and per-person limits, switch gifts on and off, mark claims as fulfilled, and cancel or refund them.
+- **System admins** search and export every record (ledger, attendance, claims, employees) to CSV, look up one employee's full history, award, deduct and revert points, and manage roles, API keys, email templates and the seasonal theme.
 - **Other applications** read balances and add or spend points through an API-key protected integration API.
 - English, Japanese and Traditional Chinese; seasonal themes that follow Taiwan's festival calendar; email notifications over SMTP.
 

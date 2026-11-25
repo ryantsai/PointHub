@@ -17,7 +17,7 @@ import type {
 const EVENT_COLORS: Record<EventStatus, string> = { draft: 'gray', open: 'green', closed: 'blue', cancelled: 'red' };
 const CHECKIN_COLORS: Record<CheckInStatus, string> = { pending: 'yellow', approved: 'green', rejected: 'red', reverted: 'gray' };
 const CHECKIN_ICONS: Record<CheckInStatus, LucideIcon> = { pending: Hourglass, approved: Check, rejected: X, reverted: Undo2 };
-const REDEMPTION_COLORS: Record<RedemptionStatus, string> = { requested: 'yellow', fulfilled: 'green', cancelled: 'gray' };
+const REDEMPTION_COLORS: Record<RedemptionStatus, string> = { requested: 'yellow', fulfilled: 'green', cancelled: 'gray', refunded: 'orange' };
 const TX_COLORS: Record<TransactionType, string> = {
   eventAward: 'brand',
   redemption: 'accent',

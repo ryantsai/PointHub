@@ -55,7 +55,9 @@ Three ways in, one record out (`EventCheckIn`, unique per event and employee):
 
 ### Gifts
 
-`RedemptionService.RedeemAsync` checks the per-employee limit, decrements stock (with a `GiftStockMovement`), debits points and creates the `Redemption` in one save. `Gift` has a `rowversion` and a `CHECK (Stock >= 0)` constraint, so the last item cannot be redeemed twice. Cancelling refunds through a reversal and returns the stock. A gift admin marks a claim **fulfilled** when the gift is handed over (who and when are recorded); the mark can be undone.
+`RedemptionService.RedeemAsync` checks the per-employee limit, decrements stock (with a `GiftStockMovement`), debits points and creates the `Redemption` in one save. `Gift` has a `rowversion` and a `CHECK (Stock >= 0)` constraint, so the last item cannot be redeemed twice. Cancelling refunds through a reversal and returns the stock. A gift admin marks a claim **fulfilled** when the gift is handed over (who and when are recorded); the mark can be undone. After hand-over a claim can be **refunded**: the points return through a reversal and the stock is restored unless the admin says the item did not come back.
+
+The per-person limit (any number from 1, or none) and the gift's on/off switch are checked in exactly one place, when a new claim is made. Nothing else reads them, which is what guarantees that changing either never alters claims that already exist.
 
 **Pictures.** `GiftImageService` decodes every upload with SkiaSharp (the extension and content type are not trusted), applies the EXIF orientation, fits the picture into a 1024 × 1024 transparent frame and stores it as WebP in the flat `uploads/assets` folder under a random id. Re-encoding drops metadata. The `GiftImage` row ties the file to a gift and orders it; the folder is served read-only at `/uploads/assets`.
 
@@ -66,6 +68,15 @@ Three ways in, one record out (`EventCheckIn`, unique per event and employee):
 ### Email
 
 A notification is rendered from a template (built-in defaults in three languages, admin overrides in `EmailTemplates`) and written to `EmailMessages` **in the same save** as the change it reports. `EmailDispatcher`, a background service, sends pending rows through SMTP (MailKit) and retries failures with growing pauses up to five times. If SMTP is not configured the rows are marked skipped. Templates are plain text with `{{placeholders}}`; values are HTML-escaped, so neither a template nor an event title can inject markup.
+
+### Search and export
+
+- **Text search** is one `q` parameter per list. `SearchText.Terms` splits it into at most five words and `SearchExtensions.Matching` adds one `Contains` per word, so every word must be found (AND). EF sends each word as a parameter of a `LIKE`, with wildcard characters escaped, so nothing a user types is interpreted.
+- Event and gift titles are stored as JSON in three languages. To search them without parsing JSON in SQL, `Event` and `Gift` carry a plain **`SearchText` column** (titles, descriptions and location in all languages), refreshed in `PointHubDbContext.SaveChanges` whenever the entity is added or changed. The ledger, attendance and claim searches reach that column through their navigation to the event or gift.
+- **Admin record lists** (`AdminRecordsEndpoints`): ledger, attendance, claims and employees. Each list and its export share one filter definition, so an export always contains exactly what the filtered list shows. `from` / `to` are calendar days in the site time zone.
+- **CSV export** (`CsvExport`): streamed row by row, UTF-8 with a byte-order mark so Excel reads Chinese and Japanese, headings and value labels in the caller's language (`ExportLabels`), times in the site time zone. Capped at 50 000 rows (`X-Export-Truncated: true` when cut). A text cell that begins with `=`, `+`, `-`, `@`, tab or carriage return gets a leading apostrophe, which stops spreadsheet formula injection through names and reasons. Every export writes an `export.*` audit row with its filters and row count before the first byte is sent.
+- **Employee lookup** is `GET /api/admin/employees/{id}` for the profile and totals; the person's history is the three lists filtered by `employeeId`, and awarding or deducting points is the ordinary adjustment.
+- This is substring matching, which cannot use an index. It is fine for one site's data; if the ledger reaches millions of rows, move `SearchText` and the employee columns to a SQL Server full-text index behind the same `Matching` methods.
 
 ### Dashboard numbers
 
@@ -78,7 +89,7 @@ A notification is rendered from a template (built-in defaults in three languages
 | Employees and admins | HTTP-only same-site cookie | Issued after single sign-on. `Auth:Mode` picks how the person is identified: `EntraId` (OIDC code flow), `Windows` (Negotiate / Kerberos against on-prem AD; `WindowsAccountResolver` reads `mail`, `employeeID` and `displayName` from the directory, or derives the email from the logon name) or, in Development only, `Dev`. `SignInService` then matches the identity to an employee by email or employee number, creates a provisional employee or bootstrap admin where configured, and issues the cookie. The cookie carries the employee id and roles; every five minutes the employee is re-read so deactivation and role changes take effect. |
 | Other applications | `X-Api-Key` | Only on `/api/integration/v1`. Policies name the scheme explicitly, so a cookie can never call the integration API and an API key can never call the employee or admin API. |
 
-- Roles: system admin, event admin, gift admin, auditor (read-only); no role is a normal user. Policies: `eventAdmin` (event admin or system admin), `giftAdmin`, `systemAdmin`, `adminRead` (system admin or auditor), and one per API scope. The role table is in [api.md](api.md#roles).
+- Roles: system admin, event admin, gift admin, auditor (read-only); no role is a normal user. Policies: `eventAdmin` (event admin or system admin), `giftAdmin`, `systemAdmin`, `adminRead` (system admin or auditor), `claimsRead` (gift admin, system admin or auditor – reading and exporting claims), and one per API scope. The role table is in [api.md](api.md#roles).
 - CSRF: every cookie-authenticated write must carry `X-Requested-With: PointHub`. A cross-site page cannot add a custom header without a CORS preflight, and no cross-origin caller is allowed.
 - The API answers `401`/`403` with problem+json; it never redirects to a login page. Every error has a stable `code` the client translates.
 - Privileged and point-affecting actions write an `AuditLog` row in the same save as the change.
@@ -97,13 +108,13 @@ React 19, Vite, TypeScript strict, Chakra UI v3 in the "Arcade" design, Motion, 
 
 ## Testing
 
-- `tests/PointHub.Tests`: fast unit tests of the domain rules (no database).
+- `tests/PointHub.Tests`: fast unit tests of the domain rules, search-term parsing and CSV cell encoding (no database).
 - The services were exercised end to end against LocalDB through the HTTP API while scaffolding, but there is **no automated integration test suite yet**. Next step: `WebApplicationFactory` tests against a throwaway SQL Server database (LocalDB locally, a container in CI), starting with the ledger invariants – balance equals the sum of transactions, no double award, no oversold stock under concurrency.
 - The front end has no tests yet.
 
 ## Known gaps in the scaffold
 
 - Not verified: the Entra ID sign-in path (needs a tenant), the card bridge and Web NFC against physical readers and cards.
-- No employee CSV import screen, no reports or exports.
+- No employee CSV import screen and no summary reports (the record lists themselves export to CSV).
 - Validation error keys are property names in PascalCase (`errors.Title.En`), not camelCase.
 - When a roster is re-matched, check-ins already pending keep their old "on roster" flag.

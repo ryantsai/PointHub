@@ -80,6 +80,8 @@ public static class Policies
     public const string GiftAdmin = "giftAdmin";
     public const string SystemAdmin = "systemAdmin";
     public const string AdminRead = "adminRead";
+    /// <summary>May look at claims: gift admins and system admins, plus auditors (read-only).</summary>
+    public const string ClaimsRead = "claimsRead";
     public const string IntegrationRead = "integration:read";
     public const string IntegrationWrite = "integration:write";
     public const string IntegrationEmployees = "integration:employees";
@@ -166,7 +168,8 @@ public static class AuthSetup
             .AddPolicy(Policies.EventAdmin, p => p.RequireRole(RoleName.EventAdmin, RoleName.SystemAdmin))
             .AddPolicy(Policies.GiftAdmin, p => p.RequireRole(RoleName.GiftAdmin, RoleName.SystemAdmin))
             .AddPolicy(Policies.SystemAdmin, p => p.RequireRole(RoleName.SystemAdmin))
-            .AddPolicy(Policies.AdminRead, p => p.RequireRole(RoleName.SystemAdmin, RoleName.Auditor));
+            .AddPolicy(Policies.AdminRead, p => p.RequireRole(RoleName.SystemAdmin, RoleName.Auditor))
+            .AddPolicy(Policies.ClaimsRead, p => p.RequireRole(RoleName.GiftAdmin, RoleName.SystemAdmin, RoleName.Auditor));
         return services;
     }
 

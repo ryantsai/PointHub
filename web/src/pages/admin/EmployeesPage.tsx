@@ -2,10 +2,11 @@ import { Badge, Box, Button, Flex, IconButton, Tag, Text } from '@chakra-ui/reac
 import { CreditCard, Nfc, Pencil, Plus, ReceiptText, SlidersHorizontal, Users } from 'lucide-react';
 import { useCallback, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link } from 'react-router';
+import { Link, useNavigate } from 'react-router';
 import { useEmployees, useRegisterCard, useRemoveCard, useSetEmployeeRoles } from '../../api/admin';
 import type { Card, Employee, Role } from '../../api/types';
 import { RoleBadges } from '../../components/badges';
+import { ExportButton } from '../../components/ExportButton';
 import { Page } from '../../components/Page';
 import { Pager } from '../../components/states';
 import { DataTable, type Column } from '../../components/ui/DataTable';
@@ -19,12 +20,12 @@ import type { CardRead } from '../../features/cardReader/types';
 import { useCardReader } from '../../features/cardReader/useCardReader';
 import { useErrorMessage, useFormat } from '../../i18n/hooks';
 import { openConfirm } from '../../lib/confirm';
-import { useDebouncedValue } from '../../lib/hooks';
 import { notifyError, notifySuccess } from '../../lib/notify';
 import { can } from '../../lib/roles';
 import { useSession } from '../../lib/session';
+import { readPage, useUrlFilters, useUrlSearch } from '../../lib/urlFilters';
 import { AdjustPointsForm } from './AdjustPointsForm';
-import { FormActions, TableBlock, Toolbar, TwoLine } from './parts';
+import { FormActions, TableBlock, TextLink, Toolbar, TwoLine } from './parts';
 
 const PAGE_SIZE = 25;
 /** In the order of the role table in docs/api.md, most powerful first. */
@@ -177,16 +178,21 @@ function RegisterCardForm({ employee, onDone }: { employee: Employee; onDone: ()
   );
 }
 
-/** People, balances, roles and ID cards. System admins edit; auditors only read. */
+/**
+ * People, balances, roles and ID cards. System admins edit; auditors only read. A row (or the name in it)
+ * opens that person's lookup page. The search and the page live in the URL; "Export CSV" downloads the
+ * searched list with balances and lifetime totals.
+ */
 export function EmployeesPage() {
   const { t } = useTranslation();
   const me = useSession();
   const format = useFormat();
   const errorMessage = useErrorMessage();
-  const [search, setSearch] = useState('');
-  const [q] = useDebouncedValue(search, 300);
-  const [page, setPage] = useState(1);
-  const employees = useEmployees(q, page, PAGE_SIZE);
+  const navigate = useNavigate();
+  const { params, patch } = useUrlFilters();
+  const search = useUrlSearch('q');
+  const page = readPage(params);
+  const employees = useEmployees(search.q, page, PAGE_SIZE);
   const removeCard = useRemoveCard();
   const [registering, setRegistering] = useState<Employee | null>(null);
   const [adjusting, setAdjusting] = useState<Employee | null>(null);
@@ -214,7 +220,7 @@ export function EmployeesPage() {
         <TwoLine
           primary={
             <Flex align="center" gap="2" wrap="wrap">
-              {employee.displayName}
+              <TextLink to={`/admin/employees/${employee.id}`}>{employee.displayName}</TextLink>
               {!employee.isActive && (
                 <Badge size="xs" colorPalette="gray" variant="solid">
                   {t('admin.employees.inactive')}
@@ -326,17 +332,8 @@ export function EmployeesPage() {
   return (
     <Page title={t('admin.employees.title')} subtitle={t('admin.employees.subtitle')}>
       <TableBlock>
-        <Toolbar>
-          <SearchField
-            flex="1"
-            maxW="420px"
-            label={t('admin.employees.search')}
-            value={search}
-            onChange={(value) => {
-              setSearch(value);
-              setPage(1);
-            }}
-          />
+        <Toolbar actions={<ExportButton path="/api/admin/employees/export" filters={{ q: search.q }} />}>
+          <SearchField flex="1 1 240px" minW="0" maxW={{ md: '420px' }} label={t('admin.employees.search')} value={search.text} onChange={search.onChange} />
         </Toolbar>
         <DataTable
           columns={columns}
@@ -347,10 +344,11 @@ export function EmployeesPage() {
           error={employees.error}
           onRetry={() => void employees.refetch()}
           stale={employees.isPlaceholderData}
-          emptyMessage={t('admin.employees.empty')}
+          onRowClick={(employee) => void navigate(`/admin/employees/${employee.id}`)}
+          emptyMessage={search.q !== '' ? t('filters.noMatch', { q: search.q }) : t('admin.employees.empty')}
           emptyIcon={<Users size={26} strokeWidth={2.2} aria-hidden />}
         />
-        {employees.data && employees.data.total > 0 && <Pager page={page} pageSize={PAGE_SIZE} total={employees.data.total} onChange={setPage} />}
+        {employees.data && employees.data.total > 0 && <Pager page={page} pageSize={PAGE_SIZE} total={employees.data.total} onChange={(next) => patch({ page: next === 1 ? null : next })} />}
       </TableBlock>
 
       <Modal opened={editingRoles !== null} onClose={() => setEditingRoles(null)} title={t('admin.roles.title')}>

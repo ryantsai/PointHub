@@ -1,5 +1,5 @@
 import { Button, ButtonGroup, Center, Flex, IconButton, Pagination, Text, VisuallyHidden } from '@chakra-ui/react';
-import { ChevronLeft, ChevronRight, Inbox } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Inbox, SearchX } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useErrorMessage } from '../i18n/hooks';
@@ -59,6 +59,18 @@ export function EmptyState({ message, icon, sprite, children }: EmptyStateProps)
       </Text>
       {children}
     </Flex>
+  );
+}
+
+/** A search that found nothing: says what was searched for and offers the way back to the whole list. */
+export function NoMatch({ q, onClear }: { q: string; onClear: () => void }) {
+  const { t } = useTranslation();
+  return (
+    <EmptyState message={t('filters.noMatch', { q })} icon={<SearchX size={26} strokeWidth={2.2} aria-hidden />}>
+      <Button size="sm" variant="outline" onClick={onClear}>
+        {t('filters.clearSearch')}
+      </Button>
+    </EmptyState>
   );
 }
 

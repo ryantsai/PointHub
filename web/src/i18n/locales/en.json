@@ -42,7 +42,8 @@
     "adminDashboard": "Dashboard",
     "sideEmployee": "Employee",
     "sideManage": "Manage",
-    "sideSwitch": "Switch between the employee side and the management side"
+    "sideSwitch": "Switch between the employee side and the management side",
+    "attendance": "Attendance"
   },
   "themes": {
     "default": "Standard",
@@ -120,7 +121,8 @@
   "redemptionStatus": {
     "requested": "Requested",
     "fulfilled": "Handed over",
-    "cancelled": "Cancelled"
+    "cancelled": "Cancelled",
+    "refunded": "Refunded"
   },
   "login": {
     "title": "Sign in",
@@ -160,7 +162,9 @@
     "seeAll": "See all",
     "scanHint": "Scan the QR code at an event, or tap your staff badge there.",
     "waitingApproval": "Waiting for approval",
-    "checkedIn": "Checked in"
+    "checkedIn": "Checked in",
+    "searchEvents": "Search events",
+    "searchHistory": "Search your history"
   },
   "checkin": {
     "title": "Event check-in",
@@ -207,10 +211,13 @@
     "limitReached": "Limit reached",
     "stockLeft": "{{count}} left",
     "limit": "Max {{count}} per person",
+    "limitLeft": "You can claim {{count}} more",
     "redeemedTitle": "Redeemed!",
     "redeemedBody": "Your claim is with the gift team. You can follow it under “My claims”.",
     "noGifts": "No gifts are available at the moment.",
     "noRedemptions": "You have no claims yet.",
+    "pointsReturned": "{{points}} points returned",
+    "reason": "Reason: {{reason}}",
     "columns": {
       "gift": "Gift",
       "points": "Points",
@@ -219,7 +226,8 @@
     },
     "needMore": "{{points}} more points needed",
     "imageOf": "Picture {{index}} of {{count}}",
-    "redeemed": "Redeemed"
+    "redeemed": "Redeemed",
+    "search": "Search gifts"
   },
   "host": {
     "eventsTitle": "Events",
@@ -385,7 +393,7 @@
     "ledger": {
       "title": "Point ledger",
       "subtitle": "Every point movement. Nothing is deleted; corrections are new rows.",
-      "search": "Search by employee number or name",
+      "search": "Search employee, reason, event or gift",
       "type": "Transaction type",
       "allTypes": "All types",
       "filterEmployee": "Employee #{{id}}",
@@ -419,7 +427,9 @@
       "amountHelp": "Use a negative number to take points away.",
       "amountNonZero": "Enter a number other than zero",
       "changeEmployee": "Change",
-      "clearFilter": "Remove filter"
+      "clearFilter": "Remove filter",
+      "emptyAll": "No transactions yet.",
+      "filterByEvent": "Show only this event"
     },
     "gifts": {
       "title": "Gift management",
@@ -430,8 +440,12 @@
       "editGift": "Edit gift",
       "saved": "Gift saved",
       "nameRequired": "An English name is required",
-      "active": "Visible",
-      "hidden": "Hidden",
+      "active": "Enabled",
+      "hidden": "Disabled",
+      "disabledChip": "Disabled",
+      "enableFailed": "{{gift}} could not be enabled.",
+      "disableFailed": "{{gift}} could not be disabled.",
+      "disableInfo": "The switch enables or disables a gift and is saved at once. A disabled gift disappears from the catalogue and cannot be claimed. Claims already made are not affected: they can still be handed over, cancelled or refunded.",
       "empty": "No gifts yet. Add the first one.",
       "fields": {
         "name": "Name",
@@ -439,10 +453,10 @@
         "imageUrl": "Image URL",
         "pointCost": "Point cost",
         "perEmployeeLimit": "Limit per person",
-        "perEmployeeLimitHelp": "How many of this gift one person may claim in total.",
+        "perEmployeeLimitHelp": "How many of this gift one person may claim in total. Changing the limit only affects new claims; it never cancels claims that already exist.",
         "initialStock": "Opening stock",
-        "isActive": "Show in the catalog",
-        "isActiveHelp": "Hidden gifts cannot be redeemed."
+        "isActive": "Enabled",
+        "isActiveHelp": "A disabled gift is hidden from the catalogue and cannot be claimed. Claims already made are not affected."
       },
       "columns": {
         "stock": "Stock",
@@ -477,7 +491,9 @@
         "limited": "Limited",
         "count": "Maximum per person",
         "unit": "per person",
-        "required": "Enter 1 or more, or choose “No limit”"
+        "required": "Enter a number, or choose “No limit”.",
+        "invalid": "Use a whole number, 1 or more. 0, negative numbers and decimals are not accepted.",
+        "tooLarge": "The highest limit is {{max}}. For more than that, choose “No limit”."
       },
       "images": {
         "title": "Pictures",
@@ -513,7 +529,7 @@
     "employees": {
       "title": "Employees & cards",
       "subtitle": "Balances and the ID cards used for tap check-in.",
-      "search": "Search by employee number, name or email",
+      "search": "Search by number, name, email or department",
       "empty": "No employees match.",
       "inactive": "Inactive",
       "noCards": "No card",
@@ -615,18 +631,20 @@
     "claims": {
       "title": "Claims",
       "subtitle": "See which gifts still have to be handed over, and mark each claim once it is.",
-      "search": "Search by employee number or name",
+      "search": "Search employee, gift or reason",
       "giftFilter": "Gift",
       "allGifts": "All gifts",
       "tab": {
         "requested": "To hand over",
         "fulfilled": "Fulfilled",
-        "cancelled": "Cancelled"
+        "cancelled": "Cancelled",
+        "refunded": "Refunded"
       },
       "empty": {
         "requested": "Nothing to hand over. Every claim is taken care of.",
         "fulfilled": "No fulfilled claims yet.",
-        "cancelled": "No cancelled claims."
+        "cancelled": "No cancelled claims.",
+        "refunded": "No refunded claims."
       },
       "emptyFiltered": "No claims match the search.",
       "columns": {
@@ -640,6 +658,9 @@
       "fulfilledMoment": "Handed over!",
       "fulfilledBy": "Fulfilled by",
       "cancelledBy": "Cancelled by",
+      "refundedBy": "Refunded by",
+      "reason": "Reason: {{reason}}",
+      "reasonHelp": "The employee can see this reason under “My claims”.",
       "undo": "Undo",
       "undoTitle": "Take back “fulfilled”?",
       "undoBody": "The claim of {{name}} for {{gift}} goes back to “To hand over”. Points and stock stay as they are.",
@@ -648,7 +669,17 @@
       "cancel": "Cancel claim",
       "cancelTitle": "Cancel claim",
       "cancelBody": "{{name}} claimed {{gift}} × {{quantity}}. Cancelling gives the {{points}} points back to the employee and returns the gift to stock.",
-      "cancelled": "Claim cancelled. Points and stock were returned."
+      "cancelled": "Claim cancelled. Points and stock were returned.",
+      "refund": "Refund",
+      "refundTitle": "Refund claim",
+      "refundBody": "{{name}} received {{gift}} × {{quantity}}. A refund gives the {{points}} points back to the employee and marks the claim as refunded. It cannot be undone.",
+      "refundRestock": "Put {{gift}} × {{quantity}} back in stock",
+      "refundRestockHelp": "Untick this if the gift did not come back or cannot be given out again.",
+      "refundConfirm": "Refund",
+      "refunded": "Claim refunded. The points were returned.",
+      "refundedRestocked": "Claim refunded. The points were returned and the stock restored.",
+      "subtitleReadOnly": "Every gift claim and where it stands.",
+      "readOnly": "You can read and export this list. Handing over, cancelling and refunding are done by gift admins."
     },
     "themes": {
       "title": "Seasonal theme",
@@ -745,6 +776,10 @@
           "name": "Claim cancelled",
           "help": "Sent when a claim is cancelled and the points are returned."
         },
+        "redemptionRefunded": {
+          "name": "Gift refunded",
+          "help": "Sent when an admin refunds a gift that was already handed over."
+        },
         "pointsAdjusted": {
           "name": "Points adjusted",
           "help": "Sent when an administrator adds or removes points by hand."
@@ -788,6 +823,70 @@
         "attempts": "Attempts",
         "result": "Sent / error"
       }
+    },
+    "attendance": {
+      "title": "Attendance",
+      "subtitle": "Every check-in, across all events. Check-ins are approved on the event’s own page.",
+      "search": "Search employee or event",
+      "status": "Check-in status",
+      "allStatuses": "All statuses",
+      "empty": "No check-ins match.",
+      "emptyAll": "No check-ins yet.",
+      "columns": {
+        "checkedIn": "Checked in",
+        "employee": "Employee",
+        "event": "Event",
+        "status": "Status",
+        "method": "Method",
+        "points": "Points",
+        "decided": "Decided by"
+      }
+    },
+    "lookup": {
+      "back": "Employees",
+      "backToList": "Back to employees",
+      "notFound": "No employee was found for this link. It may be out of date.",
+      "employeeNo": "Employee number",
+      "name": "Name",
+      "email": "Email",
+      "status": "Account",
+      "active": "Active",
+      "provisional": "Provisional",
+      "provisionalHelp": "Created at first sign-in and not yet confirmed by the HR system.",
+      "since": "In PointHub since",
+      "balance": "Balance",
+      "lifetimeEarned": "Earned in total",
+      "lifetimeSpent": "Spent in total",
+      "checkIns": "Approved check-ins",
+      "claims": "Claims",
+      "tab": {
+        "points": "Point history",
+        "attendance": "Attendance",
+        "claims": "Claims"
+      },
+      "search": {
+        "points": "Search reason, event or gift",
+        "attendance": "Search events",
+        "claims": "Search gift or reason"
+      },
+      "empty": {
+        "points": "No point movements yet.",
+        "attendance": "No check-ins yet.",
+        "claims": "No claims yet."
+      },
+      "award": "Award points",
+      "deduct": "Deduct points",
+      "awardTitle": "Award points",
+      "deductTitle": "Deduct points",
+      "amountAward": "Points to award",
+      "amountDeduct": "Points to deduct",
+      "amountPositive": "Enter a whole number above zero",
+      "reasonHelp": "The employee sees this reason in their own history.",
+      "negativeTitle": "The balance will go below zero",
+      "negativeBody": "The balance is {{balance}} pts, so it will be {{after}} pts afterwards. That is allowed; just make sure the amount is right.",
+      "awarded": "{{points}} pts awarded to {{name}}",
+      "deducted": "{{points}} pts deducted from {{name}}",
+      "newBalance": "New balance"
     }
   },
   "errors": {
@@ -815,7 +914,7 @@
     "gift_inactive": "This gift is not available at the moment.",
     "already_reversed": "This transaction has already been reverted.",
     "not_reversible": "This kind of transaction cannot be reverted.",
-    "redemption_already_closed": "This claim was already handed over or cancelled.",
+    "redemption_already_closed": "This claim has changed in the meantime (handed over, cancelled or refunded), so that is no longer possible. Reload to see where it stands.",
     "invalid_csv": "The file could not be read. Use a UTF-8 CSV with an employeeNo column.",
     "invalid_image": "That file is not a picture we can read, or it is too large (8 MB at most).",
     "too_many_images": "A gift can have at most 8 pictures.",
@@ -830,5 +929,20 @@
     "title": "Something broke on this page",
     "body": "Reloading usually fixes it. If it keeps happening, let the administrators know.",
     "reload": "Reload"
+  },
+  "filters": {
+    "from": "From",
+    "to": "To",
+    "dateRange": "Date range",
+    "clear": "Clear filters",
+    "noMatch": "Nothing matches “{{q}}”.",
+    "clearSearch": "Clear search"
+  },
+  "export": {
+    "csv": "Export CSV",
+    "working": "Exporting…",
+    "done": "Saved {{file}}",
+    "truncated": "The export stopped at {{max}} rows, so {{file}} does not hold everything. Narrow the filters and export again.",
+    "failed": "The export did not work. {{reason}}"
   }
 }

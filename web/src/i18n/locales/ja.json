@@ -42,7 +42,8 @@
     "adminDashboard": "ダッシュボード",
     "sideEmployee": "社員",
     "sideManage": "管理",
-    "sideSwitch": "社員画面と管理画面の切り替え"
+    "sideSwitch": "社員画面と管理画面の切り替え",
+    "attendance": "出席記録"
   },
   "themes": {
     "default": "標準",
@@ -120,7 +121,8 @@
   "redemptionStatus": {
     "requested": "申請中",
     "fulfilled": "受け渡し済み",
-    "cancelled": "キャンセル"
+    "cancelled": "キャンセル",
+    "refunded": "返還済み"
   },
   "login": {
     "title": "サインイン",
@@ -160,7 +162,9 @@
     "seeAll": "すべて見る",
     "scanHint": "イベント会場のQRコードを読み取るか、社員証をタッチしてください。",
     "waitingApproval": "承認待ち",
-    "checkedIn": "チェックイン済み"
+    "checkedIn": "チェックイン済み",
+    "searchEvents": "イベントを検索",
+    "searchHistory": "履歴を検索"
   },
   "checkin": {
     "title": "イベントチェックイン",
@@ -207,10 +211,13 @@
     "limitReached": "上限に達しました",
     "stockLeft": "残り {{count}} 個",
     "limit": "お一人様 {{count}} 個まで",
+    "limitLeft": "あと {{count}} 個交換できます",
     "redeemedTitle": "交換を受け付けました！",
     "redeemedBody": "ギフト担当に申請が届きました。状況は「交換履歴」で確認できます。",
     "noGifts": "現在交換できるギフトはありません。",
     "noRedemptions": "まだ交換したギフトはありません。",
+    "pointsReturned": "{{points}} ポイントが戻りました",
+    "reason": "理由：{{reason}}",
     "columns": {
       "gift": "ギフト",
       "points": "ポイント",
@@ -219,7 +226,8 @@
     },
     "needMore": "あと {{points}} ポイント必要です",
     "imageOf": "画像 {{index}} / {{count}}",
-    "redeemed": "交換しました"
+    "redeemed": "交換しました",
+    "search": "ギフトを検索"
   },
   "host": {
     "eventsTitle": "イベント",
@@ -385,7 +393,7 @@
     "ledger": {
       "title": "ポイント台帳",
       "subtitle": "すべてのポイントの動きです。記録は削除されず、訂正は新しい行として追加されます。",
-      "search": "社員番号または氏名で検索",
+      "search": "社員・理由・イベント・ギフトで検索",
       "type": "取引の種類",
       "allTypes": "すべての種類",
       "filterEmployee": "社員 #{{id}}",
@@ -419,7 +427,9 @@
       "amountHelp": "減らす場合はマイナスの数値を入力してください。",
       "amountNonZero": "0以外の数値を入力してください",
       "changeEmployee": "変更",
-      "clearFilter": "絞り込みを解除"
+      "clearFilter": "絞り込みを解除",
+      "emptyAll": "取引はまだありません。",
+      "filterByEvent": "このイベントだけを表示"
     },
     "gifts": {
       "title": "ギフト管理",
@@ -430,8 +440,12 @@
       "editGift": "ギフトを編集",
       "saved": "ギフトを保存しました",
       "nameRequired": "英語の名称は必須です",
-      "active": "公開中",
-      "hidden": "非公開",
+      "active": "有効",
+      "hidden": "無効",
+      "disabledChip": "無効",
+      "enableFailed": "{{gift}} を有効にできませんでした。",
+      "disableFailed": "{{gift}} を無効にできませんでした。",
+      "disableInfo": "スイッチでギフトの有効／無効を切り替えると、すぐに保存されます。無効にしたギフトはカタログに表示されず、交換できなくなります。すでにある交換申請には影響せず、これまでどおり受け渡し・キャンセル・返還ができます。",
       "empty": "ギフトはまだありません。最初のギフトを追加しましょう。",
       "fields": {
         "name": "名称",
@@ -439,10 +453,10 @@
         "imageUrl": "画像URL",
         "pointCost": "必要ポイント",
         "perEmployeeLimit": "一人あたりの上限",
-        "perEmployeeLimitHelp": "一人が合計で何個まで交換できるかを指定します。",
+        "perEmployeeLimitHelp": "一人が合計で何個まで交換できるかを指定します。上限を変更しても、適用されるのはこれからの交換だけです。すでにある交換申請が取り消されることはありません。",
         "initialStock": "初期在庫",
-        "isActive": "カタログに表示する",
-        "isActiveHelp": "非公開のギフトは交換できません。"
+        "isActive": "有効にする",
+        "isActiveHelp": "無効にしたギフトはカタログに表示されず、交換できません。すでにある交換申請には影響しません。"
       },
       "columns": {
         "stock": "在庫",
@@ -477,7 +491,9 @@
         "limited": "上限あり",
         "count": "一人あたりの上限数",
         "unit": "個まで／人",
-        "required": "1 以上の数を入力するか、「上限なし」を選んでください"
+        "required": "数を入力するか、「上限なし」を選んでください。",
+        "invalid": "1 以上の整数を入力してください。0、負の数、小数は指定できません。",
+        "tooLarge": "指定できる上限は {{max}} までです。それより多くする場合は「上限なし」を選んでください。"
       },
       "images": {
         "title": "画像",
@@ -513,7 +529,7 @@
     "employees": {
       "title": "社員・カード",
       "subtitle": "残高と、タッチでチェックインするための社員証を管理します。",
-      "search": "社員番号・氏名・メールで検索",
+      "search": "社員番号・氏名・メール・部署で検索",
       "empty": "該当する社員はいません。",
       "inactive": "無効",
       "noCards": "カードなし",
@@ -615,18 +631,20 @@
     "claims": {
       "title": "交換申請",
       "subtitle": "まだ渡していないギフトを確認し、渡したら申請を完了にします。",
-      "search": "社員番号または氏名で検索",
+      "search": "社員・ギフト・理由で検索",
       "giftFilter": "ギフト",
       "allGifts": "すべてのギフト",
       "tab": {
         "requested": "未受け渡し",
         "fulfilled": "受け渡し済み",
-        "cancelled": "キャンセル"
+        "cancelled": "キャンセル",
+        "refunded": "返還済み"
       },
       "empty": {
         "requested": "渡すギフトはありません。すべての申請に対応済みです。",
         "fulfilled": "受け渡し済みの申請はまだありません。",
-        "cancelled": "キャンセルされた申請はありません。"
+        "cancelled": "キャンセルされた申請はありません。",
+        "refunded": "返還された申請はありません。"
       },
       "emptyFiltered": "条件に一致する申請はありません。",
       "columns": {
@@ -640,6 +658,9 @@
       "fulfilledMoment": "受け渡し完了！",
       "fulfilledBy": "受け渡し担当",
       "cancelledBy": "キャンセル担当",
+      "refundedBy": "返還担当",
+      "reason": "理由：{{reason}}",
+      "reasonHelp": "この理由は、本人の「交換履歴」に表示されます。",
       "undo": "元に戻す",
       "undoTitle": "「受け渡し済み」を取り消しますか？",
       "undoBody": "{{name}} さんの {{gift}} の申請を「未受け渡し」に戻します。ポイントと在庫は変わりません。",
@@ -648,7 +669,17 @@
       "cancel": "申請をキャンセル",
       "cancelTitle": "申請のキャンセル",
       "cancelBody": "{{name}} さんの申請：{{gift}} × {{quantity}}。キャンセルすると {{points}} ポイントが本人に返還され、在庫も元に戻ります。",
-      "cancelled": "申請をキャンセルしました。ポイントと在庫を戻しました。"
+      "cancelled": "申請をキャンセルしました。ポイントと在庫を戻しました。",
+      "refund": "返還",
+      "refundTitle": "交換の返還",
+      "refundBody": "{{name}} さんは {{gift}} × {{quantity}} を受け取り済みです。返還すると {{points}} ポイントが本人に戻り、申請は「返還済み」になります。この操作は取り消せません。",
+      "refundRestock": "{{gift}} × {{quantity}} を在庫に戻す",
+      "refundRestockHelp": "品物が戻ってこない場合や、もう一度渡せない場合はチェックを外してください。",
+      "refundConfirm": "返還する",
+      "refunded": "返還しました。ポイントを本人に戻しました。",
+      "refundedRestocked": "返還しました。ポイントと在庫を戻しました。",
+      "subtitleReadOnly": "すべての交換申請と、その対応状況です。",
+      "readOnly": "この一覧は閲覧とエクスポートのみ可能です。受け渡し・キャンセル・返還はギフト管理者が行います。"
     },
     "themes": {
       "title": "季節テーマ",
@@ -745,6 +776,10 @@
           "name": "交換申請のキャンセル",
           "help": "申請がキャンセルされ、ポイントが返還されたときに送信されます。"
         },
+        "redemptionRefunded": {
+          "name": "ギフトの返還",
+          "help": "受け渡し済みのギフトを管理者が返還したときに送信されます。"
+        },
         "pointsAdjusted": {
           "name": "ポイント調整",
           "help": "管理者が手動でポイントを増減したときに送信されます。"
@@ -788,6 +823,70 @@
         "attempts": "試行回数",
         "result": "送信日時／エラー"
       }
+    },
+    "attendance": {
+      "title": "出席記録",
+      "subtitle": "すべてのイベントのチェックイン記録です。承認は各イベントのページで行います。",
+      "search": "社員またはイベントで検索",
+      "status": "チェックインの状態",
+      "allStatuses": "すべての状態",
+      "empty": "該当するチェックインはありません。",
+      "emptyAll": "チェックインはまだありません。",
+      "columns": {
+        "checkedIn": "チェックイン日時",
+        "employee": "社員",
+        "event": "イベント",
+        "status": "状態",
+        "method": "方法",
+        "points": "ポイント",
+        "decided": "承認・却下"
+      }
+    },
+    "lookup": {
+      "back": "社員・カード",
+      "backToList": "社員一覧に戻る",
+      "notFound": "この社員は見つかりませんでした。リンクが古い可能性があります。",
+      "employeeNo": "社員番号",
+      "name": "氏名",
+      "email": "メール",
+      "status": "アカウント",
+      "active": "有効",
+      "provisional": "仮登録",
+      "provisionalHelp": "初回サインイン時に作成され、人事システムでの確認がまだ済んでいません。",
+      "since": "登録日時",
+      "balance": "残高",
+      "lifetimeEarned": "累計獲得",
+      "lifetimeSpent": "累計利用",
+      "checkIns": "承認済みチェックイン",
+      "claims": "交換申請",
+      "tab": {
+        "points": "ポイント履歴",
+        "attendance": "出席記録",
+        "claims": "交換申請"
+      },
+      "search": {
+        "points": "理由・イベント・ギフトで検索",
+        "attendance": "イベントを検索",
+        "claims": "ギフト・理由で検索"
+      },
+      "empty": {
+        "points": "ポイントの動きはまだありません。",
+        "attendance": "チェックインはまだありません。",
+        "claims": "交換申請はまだありません。"
+      },
+      "award": "ポイントを付与",
+      "deduct": "ポイントを減算",
+      "awardTitle": "ポイントの付与",
+      "deductTitle": "ポイントの減算",
+      "amountAward": "付与するポイント",
+      "amountDeduct": "減算するポイント",
+      "amountPositive": "1 以上の整数を入力してください",
+      "reasonHelp": "この理由は本人の履歴にも表示されます。",
+      "negativeTitle": "残高がマイナスになります",
+      "negativeBody": "現在の残高は {{balance}} pt のため、減算後は {{after}} pt になります。このまま実行できますが、ポイント数をもう一度ご確認ください。",
+      "awarded": "{{name}} さんに {{points}} pt を付与しました",
+      "deducted": "{{name}} さんから {{points}} pt を減算しました",
+      "newBalance": "新しい残高"
     }
   },
   "errors": {
@@ -815,7 +914,7 @@
     "gift_inactive": "このギフトは現在交換できません。",
     "already_reversed": "この取引はすでに取り消されています。",
     "not_reversible": "この種類の取引は取り消せません。",
-    "redemption_already_closed": "この交換はすでに受け渡し済み、またはキャンセル済みです。",
+    "redemption_already_closed": "この申請は状態が変わっているため（受け渡し済み・キャンセル・返還済み）、この操作はできません。再読み込みして最新の状態を確認してください。",
     "invalid_csv": "ファイルを読み取れませんでした。employeeNo 列を含むUTF-8のCSVを使用してください。",
     "invalid_image": "画像として読み込めないか、サイズが大きすぎます（最大 8 MB）。",
     "too_many_images": "ギフトの画像は 8 枚までです。",
@@ -830,5 +929,20 @@
     "title": "このページで問題が発生しました",
     "body": "再読み込みすると解消することがあります。繰り返し発生する場合は管理者にお知らせください。",
     "reload": "再読み込み"
+  },
+  "filters": {
+    "from": "開始日",
+    "to": "終了日",
+    "dateRange": "期間",
+    "clear": "条件をクリア",
+    "noMatch": "「{{q}}」に一致するものはありません。",
+    "clearSearch": "検索をクリア"
+  },
+  "export": {
+    "csv": "CSVエクスポート",
+    "working": "エクスポート中…",
+    "done": "{{file}} を保存しました",
+    "truncated": "上限の {{max}} 行に達したため、{{file}} には一部しか含まれていません。条件を絞り込んで、もう一度エクスポートしてください。",
+    "failed": "エクスポートできませんでした。{{reason}}"
   }
 }

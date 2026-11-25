@@ -17,8 +17,8 @@ import { useDebouncedValue } from '../../lib/hooks';
 import { notifyError, notifySuccess } from '../../lib/notify';
 import { Form } from './parts';
 
-/** The six notifications, in the order of the contract. */
-const TEMPLATE_KEYS: EmailTemplateKey[] = ['checkInApproved', 'checkInRejected', 'redemptionRequested', 'redemptionFulfilled', 'redemptionCancelled', 'pointsAdjusted'];
+/** The notifications, in the order of the contract. */
+const TEMPLATE_KEYS: EmailTemplateKey[] = ['checkInApproved', 'checkInRejected', 'redemptionRequested', 'redemptionFulfilled', 'redemptionCancelled', 'redemptionRefunded', 'pointsAdjusted'];
 
 type Draft = { subject: string; body: string };
 type FieldName = keyof Draft;
@@ -290,7 +290,7 @@ interface EmailTemplatesProps {
   onLocaleChange: (locale: Locale) => void;
 }
 
-/** The six notifications with an on/off switch each; selecting one opens its editor. */
+/** The notifications with an on/off switch each; selecting one opens its editor. */
 export function EmailTemplates({ templates, selectedKey, locale, onSelect, onLocaleChange }: EmailTemplatesProps) {
   const { t } = useTranslation();
   const errorMessage = useErrorMessage();

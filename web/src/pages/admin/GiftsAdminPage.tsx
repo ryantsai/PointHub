@@ -1,9 +1,9 @@
-import { Badge, Button, Flex, Text } from '@chakra-ui/react';
+import { Badge, Box, Button, Flex, Switch, Text } from '@chakra-ui/react';
 import { ArrowLeft, Boxes, ClipboardCheck, Package, Pencil, Plus } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useSearchParams } from 'react-router';
-import { useAdminGifts } from '../../api/gifts';
+import { useAdminGifts, useSetGiftActive } from '../../api/gifts';
 import type { Gift } from '../../api/types';
 import { GiftThumb } from '../../components/GiftGallery';
 import { Page } from '../../components/Page';
@@ -11,8 +11,9 @@ import { ErrorBlock, LoadingBlock } from '../../components/states';
 import { DataTable, type Column } from '../../components/ui/DataTable';
 import { Modal } from '../../components/ui/Modal';
 import { Notice } from '../../components/ui/Notice';
-import { useFormat, useLocalized } from '../../i18n/hooks';
+import { useErrorMessage, useFormat, useLocalized } from '../../i18n/hooks';
 import { LOW_STOCK } from '../../lib/gifts';
+import { notifyError } from '../../lib/notify';
 import { GiftEditor } from './GiftEditor';
 import { GiftStockForm } from './GiftStockForm';
 import { LinkButton, TwoLine } from './parts';
@@ -21,7 +22,20 @@ function GiftsTable({ gifts, onEdit }: { gifts: Gift[] | undefined; onEdit: (gif
   const { t } = useTranslation();
   const format = useFormat();
   const localized = useLocalized();
+  const errorMessage = useErrorMessage();
+  const setActive = useSetGiftActive();
   const [stocking, setStocking] = useState<Gift | null>(null);
+  const [switching, setSwitching] = useState<number[]>([]);
+
+  // Saved at once. The hook shows the new state first and puts the old one back if the server refuses; here the
+  // refusal is said out loud. `mutateAsync` per call: several gifts can be switched in quick succession.
+  const toggle = (gift: Gift, isActive: boolean) => {
+    setSwitching((current) => [...current, gift.id]);
+    setActive
+      .mutateAsync({ giftId: gift.id, isActive })
+      .catch((error: unknown) => notifyError(`${t(isActive ? 'admin.gifts.enableFailed' : 'admin.gifts.disableFailed', { gift: localized(gift.name) })} ${errorMessage(error)}`))
+      .finally(() => setSwitching((current) => current.filter((id) => id !== gift.id)));
+  };
 
   const columns: Column<Gift>[] = [
     {
@@ -29,9 +43,22 @@ function GiftsTable({ gifts, onEdit }: { gifts: Gift[] | undefined; onEdit: (gif
       header: t('admin.gifts.fields.name'),
       cell: (gift) => (
         <Flex align="center" gap="3" minW="0">
-          <GiftThumb images={gift.images} size={40} shape="square" />
+          <Box flexShrink={0} opacity={gift.isActive ? 1 : 0.5} filter={gift.isActive ? undefined : 'grayscale(1)'} transition="opacity 160ms, filter 160ms">
+            <GiftThumb images={gift.images} size={40} shape="square" />
+          </Box>
           <TwoLine
-            primary={<LinkButton onClick={() => onEdit(gift)}>{localized(gift.name)}</LinkButton>}
+            primary={
+              <Flex align="center" gap="2" wrap="wrap">
+                <LinkButton color={gift.isActive ? 'brand.fg' : 'fg.muted'} onClick={() => onEdit(gift)}>
+                  {localized(gift.name)}
+                </LinkButton>
+                {!gift.isActive && (
+                  <Badge colorPalette="gray" variant="solid" size="sm" px="2">
+                    {t('admin.gifts.disabledChip')}
+                  </Badge>
+                )}
+              </Flex>
+            }
             secondary={gift.images.length === 0 ? t('admin.gifts.images.none') : t('admin.gifts.images.countShort', { count: gift.images.length })}
           />
         </Flex>
@@ -54,7 +81,7 @@ function GiftsTable({ gifts, onEdit }: { gifts: Gift[] | undefined; onEdit: (gif
       align: 'end',
       numeric: true,
       cell: (gift) => (
-        <Text as="span" fontWeight="black" color={gift.stock === 0 ? 'loss' : gift.stock <= LOW_STOCK ? 'orange.fg' : undefined}>
+        <Text as="span" fontWeight="black" color={!gift.isActive ? undefined : gift.stock === 0 ? 'loss' : gift.stock <= LOW_STOCK ? 'orange.fg' : undefined}>
           {format.number(gift.stock)}
         </Text>
       ),
@@ -70,9 +97,13 @@ function GiftsTable({ gifts, onEdit }: { gifts: Gift[] | undefined; onEdit: (gif
       key: 'status',
       header: t('admin.gifts.columns.status'),
       cell: (gift) => (
-        <Badge colorPalette={gift.isActive ? 'green' : 'gray'} variant="subtle" px="2">
-          {gift.isActive ? t('admin.gifts.active') : t('admin.gifts.hidden')}
-        </Badge>
+        <Switch.Root size="sm" colorPalette="green" checked={gift.isActive} disabled={switching.includes(gift.id)} onCheckedChange={(details) => toggle(gift, details.checked)}>
+          <Switch.HiddenInput aria-label={`${t('admin.gifts.active')}: ${localized(gift.name)}`} />
+          <Switch.Control />
+          <Switch.Label fontWeight="bold" whiteSpace="nowrap" color={gift.isActive ? 'fg' : 'fg.muted'}>
+            {gift.isActive ? t('admin.gifts.active') : t('admin.gifts.hidden')}
+          </Switch.Label>
+        </Switch.Root>
       ),
     },
     {
@@ -97,7 +128,7 @@ function GiftsTable({ gifts, onEdit }: { gifts: Gift[] | undefined; onEdit: (gif
 
   return (
     <>
-      <DataTable columns={columns} rows={gifts} rowKey={(gift) => gift.id} minWidth={720} emptyMessage={t('admin.gifts.empty')} emptyIcon={<Package size={26} strokeWidth={2.2} aria-hidden />} />
+      <DataTable columns={columns} rows={gifts} rowKey={(gift) => gift.id} rowMuted={(gift) => !gift.isActive} minWidth={820} emptyMessage={t('admin.gifts.empty')} emptyIcon={<Package size={26} strokeWidth={2.2} aria-hidden />} />
       <Modal opened={stocking !== null} onClose={() => setStocking(null)} title={t('admin.gifts.stockTitle')}>
         {stocking && <GiftStockForm key={stocking.id} gift={stocking} onDone={() => setStocking(null)} />}
       </Modal>
@@ -164,7 +195,16 @@ export function GiftsAdminPage() {
         </>
       }
     >
-      {gifts.isPending ? <LoadingBlock /> : gifts.error && !gifts.data ? <ErrorBlock error={gifts.error} onRetry={() => void gifts.refetch()} /> : <GiftsTable gifts={gifts.data} onEdit={(gift) => open(String(gift.id))} />}
+      {gifts.isPending ? (
+        <LoadingBlock />
+      ) : gifts.error && !gifts.data ? (
+        <ErrorBlock error={gifts.error} onRetry={() => void gifts.refetch()} />
+      ) : (
+        <Flex direction="column" gap="4" minW="0">
+          {gifts.data && gifts.data.length > 0 && <Notice tone="info">{t('admin.gifts.disableInfo')}</Notice>}
+          <GiftsTable gifts={gifts.data} onEdit={(gift) => open(String(gift.id))} />
+        </Flex>
+      )}
     </Page>
   );
 }

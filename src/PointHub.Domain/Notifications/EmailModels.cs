@@ -83,6 +83,7 @@ public static partial class EmailTemplates
     public const string RedemptionRequested = "redemptionRequested";
     public const string RedemptionFulfilled = "redemptionFulfilled";
     public const string RedemptionCancelled = "redemptionCancelled";
+    public const string RedemptionRefunded = "redemptionRefunded";
     public const string PointsAdjusted = "pointsAdjusted";
 
     private static readonly string[] Common = ["employeeName", "appName", "siteUrl", "balance"];
@@ -95,6 +96,7 @@ public static partial class EmailTemplates
         [RedemptionRequested] = ["giftName", "quantity", "points"],
         [RedemptionFulfilled] = ["giftName", "quantity"],
         [RedemptionCancelled] = ["giftName", "quantity", "points", "reason"],
+        [RedemptionRefunded] = ["giftName", "quantity", "points", "reason"],
         [PointsAdjusted] = ["points", "reason"],
     };
 
@@ -188,6 +190,13 @@ public static partial class EmailTemplates
             "{{employeeName}} さん\n\n{{giftName}} × {{quantity}} の交換申請が取り消され、{{points}} ポイントが返還されました。現在の残高は {{balance}} ポイントです。\n\n理由：{{reason}}"),
         [(RedemptionCancelled, Locales.TraditionalChinese)] = new("您的兌換申請已取消：{{giftName}}",
             "{{employeeName}} 您好：\n\n您兌換的 {{giftName}} × {{quantity}} 已取消，並已退還 {{points}} 點，目前餘額為 {{balance}} 點。\n\n原因：{{reason}}"),
+
+        [(RedemptionRefunded, Locales.English)] = new("Your gift was refunded: {{giftName}}",
+            "Hi {{employeeName}},\n\n{{quantity}} × {{giftName}} was taken back and {{points}} points were returned to you. Your balance is now {{balance}} points.\n\nReason: {{reason}}"),
+        [(RedemptionRefunded, Locales.Japanese)] = new("ギフトが返品処理されました：{{giftName}}",
+            "{{employeeName}} さん\n\n{{giftName}} × {{quantity}} が返品処理され、{{points}} ポイントが返還されました。現在の残高は {{balance}} ポイントです。\n\n理由：{{reason}}"),
+        [(RedemptionRefunded, Locales.TraditionalChinese)] = new("您的禮品已退還：{{giftName}}",
+            "{{employeeName}} 您好：\n\n您兌換的 {{giftName}} × {{quantity}} 已辦理退還，並已退回 {{points}} 點，目前餘額為 {{balance}} 點。\n\n原因：{{reason}}"),
 
         [(PointsAdjusted, Locales.English)] = new("Your points were adjusted: {{points}}",
             "Hi {{employeeName}},\n\nAn administrator adjusted your points by {{points}}. Your balance is now {{balance}} points.\n\nReason: {{reason}}"),

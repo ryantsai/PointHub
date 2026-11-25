@@ -92,7 +92,8 @@ namespace PointHub.Infrastructure.Persistence.Migrations
                     CheckInToken = table.Column<string>(type: "varchar(64)", unicode: false, maxLength: 64, nullable: false),
                     CheckInSecret = table.Column<string>(type: "varchar(64)", unicode: false, maxLength: 64, nullable: false),
                     CreatedById = table.Column<int>(type: "int", nullable: false),
-                    CreatedAt = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: false)
+                    CreatedAt = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: false),
+                    SearchText = table.Column<string>(type: "nvarchar(max)", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -112,7 +113,8 @@ namespace PointHub.Infrastructure.Persistence.Migrations
                     IsActive = table.Column<bool>(type: "bit", nullable: false),
                     PerEmployeeLimit = table.Column<int>(type: "int", nullable: true),
                     CreatedAt = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: false),
-                    RowVersion = table.Column<byte[]>(type: "rowversion", rowVersion: true, nullable: false)
+                    RowVersion = table.Column<byte[]>(type: "rowversion", rowVersion: true, nullable: false),
+                    SearchText = table.Column<string>(type: "nvarchar(max)", nullable: false)
                 },
                 constraints: table =>
                 {

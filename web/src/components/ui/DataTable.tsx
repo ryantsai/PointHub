@@ -46,11 +46,20 @@ interface DataTableProps<T> {
   emptyIcon?: ReactNode;
   /** Dim the rows while a new page is being fetched (`isPlaceholderData`). */
   stale?: boolean;
+  /** Rows that are switched off (a disabled gift): quieter surface and text. Say so in the row too, with a chip. */
+  rowMuted?: (row: T) => boolean;
+  /**
+   * Makes the whole row open something (a detail page). Clicks on a link, button or field inside the row keep
+   * their own meaning. Give the row a real link as well (the name cell): a row is not reachable by keyboard.
+   */
+  onRowClick?: (row: T) => void;
   size?: 'sm' | 'md';
 }
 
+const INTERACTIVE = 'a, button, input, select, textarea, label, [role="button"]';
+
 /** Column-driven table with the loading / error / empty states built in. */
-export function DataTable<T>({ columns, rows, rowKey, minWidth, loading, error, onRetry, emptyMessage, emptyIcon, stale, size = 'sm' }: DataTableProps<T>) {
+export function DataTable<T>({ columns, rows, rowKey, minWidth, loading, error, onRetry, emptyMessage, emptyIcon, stale, rowMuted, onRowClick, size = 'sm' }: DataTableProps<T>) {
   if (loading) return <LoadingBlock />;
   if (error && !rows) return <ErrorBlock error={error} onRetry={onRetry} />;
   if (!rows || rows.length === 0) return <EmptyState message={emptyMessage} icon={emptyIcon} />;
@@ -69,7 +78,23 @@ export function DataTable<T>({ columns, rows, rowKey, minWidth, loading, error, 
         </Table.Header>
         <Table.Body opacity={stale ? 0.55 : 1} transition="opacity 160ms">
           {rows.map((row) => (
-            <Table.Row key={rowKey(row)} bg="bg.panel" _hover={{ bg: 'bg.subtle' }}>
+            <Table.Row
+              key={rowKey(row)}
+              bg={rowMuted?.(row) ? 'bg.muted' : 'bg.panel'}
+              color={rowMuted?.(row) ? 'fg.muted' : undefined}
+              transition="background-color 160ms, color 160ms"
+              _hover={{ bg: 'bg.subtle' }}
+              cursor={onRowClick ? 'pointer' : undefined}
+              onClick={
+                onRowClick
+                  ? (event) => {
+                      // Not when the click was on something with its own action, or was the end of a text selection.
+                      if ((event.target as HTMLElement).closest(INTERACTIVE) || window.getSelection()?.toString()) return;
+                      onRowClick(row);
+                    }
+                  : undefined
+              }
+            >
               {columns.map((column) => (
                 <Table.Cell key={column.key} textAlign={column.align} fontVariantNumeric={column.numeric ? 'tabular-nums' : undefined} whiteSpace={column.shrink ? 'nowrap' : undefined}>
                   {column.cell(row)}

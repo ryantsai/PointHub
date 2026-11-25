@@ -269,6 +269,30 @@ public class RoleTests
         cancelled.Cancel(byId: 3, now, "out of stock after all");
         Assert.Equal(ErrorCodes.RedemptionAlreadyClosed, Assert.Throws<DomainException>(cancelled.Reopen).Code);
     }
+
+    [Fact]
+    public void Only_a_gift_that_was_handed_over_can_be_refunded_and_only_once()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var open = new Redemption();
+        Assert.Equal(ErrorCodes.RedemptionAlreadyClosed, Assert.Throws<DomainException>(() => open.Refund(3, now, "changed mind")).Code);
+
+        var handedOver = new Redemption();
+        handedOver.Fulfill(byId: 3, now);
+        handedOver.Refund(byId: 4, now.AddDays(2), "arrived damaged");
+        Assert.Equal((RedemptionStatus.Refunded, "arrived damaged", 4), (handedOver.Status, handedOver.Note, handedOver.ClosedById));
+
+        Assert.Equal(ErrorCodes.RedemptionAlreadyClosed, Assert.Throws<DomainException>(() => handedOver.Refund(4, now, "again")).Code);
+        Assert.Equal(ErrorCodes.RedemptionAlreadyClosed, Assert.Throws<DomainException>(() => handedOver.Cancel(4, now, "again")).Code);
+        Assert.Equal(ErrorCodes.RedemptionAlreadyClosed, Assert.Throws<DomainException>(handedOver.Reopen).Code);
+    }
+
+    [Fact]
+    public void A_disabled_gift_refuses_new_claims()
+    {
+        var gift = new Gift { Name = new("Mug"), IsActive = false };
+        Assert.Equal(ErrorCodes.GiftInactive, Assert.Throws<DomainException>(gift.EnsureRedeemable).Code);
+    }
 }
 
 public class ApiClientTests

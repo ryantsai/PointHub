@@ -101,6 +101,13 @@
           </div>
           <figure class="shot" data-shot="gifts" data-caption="禮品目錄"></figure>
         </div>
+        <div class="feature">
+          <div>
+            <h3>搜尋活動、禮品與自己的紀錄</h3>
+            <p>首頁與禮品目錄都有搜尋框。輸入任何一種語言的關鍵字（中文、日文或英文皆可）就能找到活動與禮品；輸入多個詞時，只列出同時包含這些詞的項目。自己的點數紀錄也可以用活動名稱、禮品名稱或原因來搜尋。</p>
+          </div>
+          <figure class="shot" data-shot="search" data-caption="在禮品目錄中搜尋"></figure>
+        </div>
         <div class="grid two">
           <figure class="shot" data-shot="claims" data-caption="我的兌換"></figure>
           <figure class="shot" data-shot="login" data-caption="登入頁（開發環境為範例帳號，正式環境為公司帳號登入）"></figure>
@@ -151,16 +158,16 @@
         <div class="feature">
           <div>
             <h3>管理禮品目錄</h3>
-            <p>以三種語言填寫名稱與說明，設定所需點數、庫存、每人兌換上限（選填）與上下架。每項禮品可以有多張圖片：上傳的圖片都會自動縮放到同一個正方形框內，不必修圖，目錄看起來也整齊一致。庫存異動都會連同原因留下紀錄。</p>
+            <p>以三種語言填寫名稱與說明，設定所需點數與庫存。每人可兌換的數量可以設為 1 以上的任何數字，或不設限；也可以隨時停用某項禮品。這兩項設定都只影響之後的新申請——已經申請的不受影響，仍可照常發放。每項禮品可以有多張圖片：上傳的圖片都會自動縮放到同一個正方形框內，不必修圖，目錄看起來也整齊一致。庫存異動都會連同原因留下紀錄。</p>
           </div>
           <figure class="shot" data-shot="admin-gifts" data-caption="禮品編輯與圖片"></figure>
         </div>
         <div class="feature">
           <div>
             <h3>發放禮品並標記已發放</h3>
-            <p>每一筆兌換申請都會列在清單中，包含申請人、禮品與時間。禮品交給員工後，禮品管理員將它標記為<b>已發放</b>；清單會顯示由誰、在何時標記，員工也會收到電子郵件通知。標記錯誤可以復原；申請也可以取消，點數與庫存都會退回。</p>
+            <p>每一筆兌換申請都會列在清單中，包含申請人、禮品與時間。禮品交給員工後，禮品管理員將它標記為<b>已發放</b>；清單會顯示由誰、在何時標記，員工也會收到電子郵件通知。標記錯誤可以復原。尚未發放的申請可以取消；已經發放的禮品可以辦理<b>退還</b>：點數退回給員工，並可選擇是否將品項加回庫存。清單可以用員工、禮品名稱或原因搜尋、依日期篩選，並匯出成 CSV。</p>
           </div>
-          <figure class="shot" data-shot="admin-claims" data-caption="兌換申請：待發放、已發放、已取消"></figure>
+          <figure class="shot" data-shot="admin-claims" data-caption="兌換申請：待發放、已發放、已取消、已退還"></figure>
         </div>
       </section>
 
@@ -176,9 +183,23 @@
         <div class="feature">
           <div>
             <h3>查看並更正每一筆點數</h3>
-            <p>點數帳本會列出每一筆異動。任何紀錄都不會被修改或刪除：錯誤是以<b>撤銷</b>（新增一筆相反的紀錄並連結到原紀錄）或附上原因的<b>調整</b>來更正，因此歷史紀錄永遠對得上，也看得出是誰做了什麼。</p>
+            <p>點數帳本會列出每一筆異動。任何紀錄都不會被修改或刪除：錯誤是以<b>撤銷</b>（新增一筆相反的紀錄並連結到原紀錄）或附上原因的<b>調整</b>來更正，因此歷史紀錄永遠對得上，也看得出是誰做了什麼。帳本可以用員工編號、姓名、原因、活動或禮品名稱搜尋，再依日期與類型篩選。</p>
           </div>
-          <figure class="shot" data-shot="admin-ledger" data-caption="點數帳本：撤銷與調整"></figure>
+          <figure class="shot" data-shot="admin-ledger" data-caption="點數帳本：搜尋、篩選、撤銷與匯出"></figure>
+        </div>
+        <div class="feature">
+          <div>
+            <h3>查詢員工並加點或扣點</h3>
+            <p>從員工清單點進任何一位員工，就能在同一頁看到餘額、累計獲得與使用、員工證，以及這個人完整的點數紀錄、出席紀錄與兌換申請——每一份都能搜尋與匯出。系統管理員可以在這裡直接<b>加點</b>或<b>扣點</b>，必須填寫原因；這筆調整會寫入點數帳本與稽核紀錄，員工也會收到電子郵件。</p>
+          </div>
+          <figure class="shot" data-shot="admin-lookup" data-caption="員工查詢：總計、紀錄與加點／扣點"></figure>
+        </div>
+        <div class="feature">
+          <div>
+            <h3>出席紀錄與匯出</h3>
+            <p>所有活動的報到紀錄集中在一份清單，可依員工、活動、狀態與日期查詢。點數帳本、出席紀錄、兌換申請與員工名單都能匯出成 CSV，用 Excel 直接開啟：內容與畫面上篩選後的結果一致，欄位標題使用管理員的語言。每次匯出都會記在稽核紀錄中——誰、何時、匯出了什麼。</p>
+          </div>
+          <figure class="shot" data-shot="admin-attendance" data-caption="出席紀錄"></figure>
         </div>
         <div class="feature">
           <div>

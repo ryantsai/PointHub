@@ -3,9 +3,10 @@ import { ArrowDownLeft, ArrowUpRight, Gift as GiftIcon, History, Plug, SlidersHo
 import { AnimatePresence, motion } from 'motion/react';
 import { useTranslation } from 'react-i18next';
 import type { MyPoints, Transaction, TransactionType } from '../../api/types';
-import { EmptyState, ErrorBlock, LoadingBlock, Pager } from '../../components/states';
+import { EmptyState, ErrorBlock, LoadingBlock, NoMatch, Pager } from '../../components/states';
 import { SectionTitle } from '../../components/ui/bits';
 import { Panel } from '../../components/ui/Panel';
+import { SearchField } from '../../components/ui/SearchField';
 import { useFormat, useLocalized } from '../../i18n/hooks';
 import { itemVariants, springs } from '../../lib/motion';
 
@@ -24,7 +25,7 @@ function TransactionRow({ tx }: { tx: Transaction }) {
   const format = useFormat();
   const localized = useLocalized();
   const typeLabel = t(`txType.${tx.type}`);
-  const title = tx.eventTitle ? localized(tx.eventTitle) : (tx.reason ?? typeLabel);
+  const title = tx.eventTitle ? localized(tx.eventTitle) : tx.giftName ? localized(tx.giftName) : (tx.reason ?? typeLabel);
   const gain = tx.amount >= 0;
   const Icon = TX_ICONS[tx.type];
   return (
@@ -60,13 +61,16 @@ interface HomeActivityProps {
   page: number;
   pageSize: number;
   onPage: (page: number) => void;
+  /** The search box (`useUrlSearch`): `q` is what the rows on screen were asked for. */
+  search: { text: string; onChange: (value: string) => void; q: string };
 }
 
 /**
  * My latest point movements, newest first; new rows slide in at the top. The pager underneath reaches the
- * rest of the history. (This is the side panel where the design has a leaderboard: there is deliberately none.)
+ * rest of the history, and the search box asks the server (`/api/me/points?q=`: event title, gift name, reason).
+ * (This is the side panel where the design has a leaderboard: there is deliberately none.)
  */
-export function HomeActivity({ points, isPending, stale, error, onRetry, page, pageSize, onPage }: HomeActivityProps) {
+export function HomeActivity({ points, isPending, stale, error, onRetry, page, pageSize, onPage, search }: HomeActivityProps) {
   const { t } = useTranslation();
   const total = points?.transactions.total ?? 0;
   return (
@@ -75,7 +79,9 @@ export function HomeActivity({ points, isPending, stale, error, onRetry, page, p
         <SectionTitle icon={History} title={t('dashboard.recentActivity')} />
         {isPending && <LoadingBlock />}
         {Boolean(error) && !points && <ErrorBlock error={error} onRetry={onRetry} />}
-        {points && total === 0 && <EmptyState message={t('dashboard.noTransactions')} />}
+        {/* Nothing to search in an empty history; once a search is on, the box stays so it can be changed. */}
+        {points && (total > 0 || search.q !== '' || search.text !== '') && <SearchField label={t('dashboard.searchHistory')} value={search.text} onChange={search.onChange} />}
+        {points && total === 0 && (search.q !== '' ? <NoMatch q={search.q} onClear={() => search.onChange('')} /> : <EmptyState message={t('dashboard.noTransactions')} />)}
         {points && total > 0 && (
           <Panel padding="2" gap="1">
             <Box as="ul" listStyleType="none" opacity={stale ? 0.55 : 1} transition="opacity 160ms">

@@ -11,6 +11,9 @@ This is the contract between `src/PointHub.Api` and `web/`. Change it here first
 - State-changing requests must send the header `X-Requested-With: PointHub` (cheap CSRF guard; the API rejects them with `400 csrf_header_missing` otherwise).
 - Errors are RFC 7807 `application/problem+json` with a stable machine-readable `code`. The client translates `code`; `title` is English and for logs only.
 - Paging: `?page=1&pageSize=50` (max 200) returns `Paged<T>`.
+- Search: `?q=` is free text. It is split on spaces into at most five terms and **every term must be found** (case-insensitive, anywhere in the text, any of the three languages). What is searched depends on the list and is stated with each endpoint. An empty `q` means no filter.
+- Date filters: `?from=YYYY-MM-DD&to=YYYY-MM-DD`, both inclusive and both optional, in the site time zone.
+- CSV export: each exportable list has a twin ending in `/export` that takes the same filters (no paging) plus `locale=` for the column headings (default: the caller's language). It returns `text/csv` as a download: UTF-8 with a byte-order mark so Excel reads Chinese and Japanese correctly, times in the site time zone, at most 50 000 rows (the response header `X-Export-Truncated: true` says when it was cut). A cell that starts with `=`, `+`, `-` or `@` is prefixed with `'` so a spreadsheet does not run it as a formula. Every export is recorded in the audit log.
 
 ```ts
 type Role = 'systemAdmin' | 'eventAdmin' | 'giftAdmin' | 'auditor';   // no role = a normal user (employee)
@@ -41,11 +44,11 @@ type Problem = { title: string; status: number; code: string; detail?: string; e
 | `employee_inactive` | 409 | target employee is deactivated |
 | `insufficient_points` | 409 | balance too low for redemption |
 | `out_of_stock` | 409 | not enough gift stock |
-| `gift_limit_reached` | 409 | per-employee limit reached |
+| `gift_limit_reached` | 409 | the claim would take the person over the gift's per-person limit |
 | `gift_inactive` | 409 | gift not redeemable |
 | `already_reversed` | 409 | transaction was already reverted |
 | `not_reversible` | 409 | transaction type cannot be reverted (e.g. a reversal) |
-| `redemption_already_closed` | 409 | fulfill/cancel on a non-`requested` redemption |
+| `redemption_already_closed` | 409 | the claim is not in a state that allows the action (fulfil / cancel need `requested`; reopen / refund need `fulfilled`) |
 | `invalid_csv` | 400 | roster file could not be parsed |
 | `invalid_image` | 400 | upload is not a readable picture, or is too large |
 | `too_many_images` | 409 | a gift can have at most 8 pictures |
@@ -92,7 +95,7 @@ type DevUser = { employeeNo: string; displayName: string; roles: Role[] };
 
 | method | path | body | returns |
 | --- | --- | --- | --- |
-| GET | `/api/me/points?page&pageSize` | | `MyPoints` |
+| GET | `/api/me/points?q=&page&pageSize` | | `MyPoints` – `q` searches the person's own history: event title, gift name, reason |
 | PUT | `/api/me/locale` | `{ locale: Locale }` | 204 |
 | GET | `/api/me/redemptions` | | `Redemption[]` (newest first) |
 
@@ -104,7 +107,7 @@ type Transaction = {
   amount: number;                 // signed: positive = credit, negative = debit
   type: TransactionType; reason: string | null;
   eventId: number | null; eventTitle: LocalizedText | null;
-  redemptionId: number | null;
+  redemptionId: number | null; giftName: LocalizedText | null;   // the claim a debit paid for, or a cancel / refund gave back
   reversesTransactionId: number | null;    // set on a reversal
   reversedByTransactionId: number | null;  // set on the original once reverted
   createdAt: string; createdByName: string | null;
@@ -115,7 +118,7 @@ type Transaction = {
 
 | method | path | body | returns |
 | --- | --- | --- | --- |
-| GET | `/api/events` | | `EventSummary[]` – open events plus drafts are hidden; ordered by `startsAt` |
+| GET | `/api/events?q=` | | `EventSummary[]` – open events (drafts, closed and cancelled ones are hidden), ordered by `startsAt`. `q` searches title, description and location |
 | GET | `/api/checkin/{token}?k=` | | `CheckInPreview` |
 | POST | `/api/checkin/{token}?k=` | | `CheckIn` (status `pending` or `approved` depending on `approvalMode`) |
 
@@ -196,40 +199,56 @@ Roster CSV: UTF-8 (BOM allowed), header row required, columns `employeeNo` (requ
 
 | method | path | role | body | returns |
 | --- | --- | --- | --- | --- |
-| GET | `/api/gifts` | any | | `Gift[]` (active only) |
+| GET | `/api/gifts?q=` | any | | `Gift[]` (enabled gifts only). `q` searches name and description |
 | POST | `/api/gifts/{id}/redeem` | any | `{ quantity: number }` | `Redemption` (status `requested`; points and stock are taken immediately) |
-| GET | `/api/admin/gifts` | giftAdmin, systemAdmin | | `Gift[]` (all) |
+| GET | `/api/admin/gifts` | giftAdmin, systemAdmin | | `Gift[]` (all, including disabled) |
 | POST | `/api/admin/gifts` | giftAdmin, systemAdmin | `GiftInput` | `Gift` |
 | PUT | `/api/admin/gifts/{id}` | giftAdmin, systemAdmin | `GiftInput` | `Gift` (does not change stock) |
+| PUT | `/api/admin/gifts/{id}/active` | giftAdmin, systemAdmin | `{ isActive: boolean }` | `Gift` – the quick on/off switch |
 | POST | `/api/admin/gifts/{id}/stock` | giftAdmin, systemAdmin | `{ delta: number; reason: string }` | `Gift` |
-| GET | `/api/admin/redemptions?status=&q=&giftId=&page&pageSize` | giftAdmin, systemAdmin | | `Paged<Redemption>` – the claims list; `q` matches employee number or name |
+| GET | `/api/admin/redemptions?status=&q=&giftId=&employeeId=&from=&to=&page&pageSize` | giftAdmin, systemAdmin, auditor | | `Paged<Redemption>` – the claims list; `q` searches employee number, name and email, gift name, and the cancel / refund reason; dates filter on when it was claimed |
+| GET | `/api/admin/redemptions/export?…` | giftAdmin, systemAdmin, auditor | | CSV of the same list |
 | POST | `/api/admin/redemptions/{id}/fulfill` | giftAdmin, systemAdmin | | `Redemption` – marks the claim as handed over (`closedAt`, `closedByName` record when and by whom) |
 | POST | `/api/admin/redemptions/{id}/reopen` | giftAdmin, systemAdmin | | `Redemption` – takes back a "fulfilled" mark made by mistake (status returns to `requested`) |
-| POST | `/api/admin/redemptions/{id}/cancel` | giftAdmin, systemAdmin | `{ reason: string }` | `Redemption` (points refunded via a reversal, stock returned) |
+| POST | `/api/admin/redemptions/{id}/cancel` | giftAdmin, systemAdmin | `{ reason: string }` | `Redemption` – for a claim not yet handed over: status `cancelled`, points returned, stock restored |
+| POST | `/api/admin/redemptions/{id}/refund` | giftAdmin, systemAdmin | `{ reason: string; restock: boolean }` | `Redemption` – for a claim already handed over: status `refunded`, points returned, and the items put back in stock when `restock` is true |
 
 ```ts
 type Gift = {
   id: number; name: LocalizedText; description: LocalizedText | null; images: GiftImage[]; // see "Gift images"
-  pointCost: number; stock: number; isActive: boolean; perEmployeeLimit: number | null;
+  pointCost: number; stock: number;
+  isActive: boolean;                 // false = disabled: hidden from the catalogue and cannot be claimed
+  perEmployeeLimit: number | null;   // how many one person may claim in total: any whole number from 1 up, or null for unlimited
+  claimedByMe: number;               // how many the signed-in person has claimed so far (cancelled and refunded claims do not count)
 };
-type GiftInput = Omit<Gift, 'id' | 'stock' | 'images'> & { initialStock?: number }; // initialStock only on POST
-type RedemptionStatus = 'requested' | 'fulfilled' | 'cancelled';
+type GiftInput = Omit<Gift, 'id' | 'stock' | 'images' | 'claimedByMe'> & { initialStock?: number }; // initialStock only on POST
+type RedemptionStatus = 'requested' | 'fulfilled' | 'cancelled' | 'refunded';
 type Redemption = {
-  id: number; giftId: number; giftName: LocalizedText; quantity: number; pointsSpent: number;
+  id: number; giftId: number; giftName: LocalizedText;
+  giftImage: GiftImage | null;       // the gift's cover picture, also when the gift has since been disabled
+  quantity: number; pointsSpent: number;
   status: RedemptionStatus; employeeId: number; employeeNo: string; employeeName: string;
   requestedAt: string; closedAt: string | null; closedByName: string | null;
+  note: string | null;               // the reason given when the claim was cancelled or refunded
 };
 ```
+
+**Disabling a gift or changing its limit only affects new claims.** Claims that already exist stay exactly as they are: they remain in the employee's list, can still be handed over, and still count as they did. A lower limit never cancels anything; it just stops further claims by people who are at or above it. To take a gift back, an admin cancels (before hand-over) or refunds (after hand-over) the individual claim, which returns the points through the ledger and restores the stock.
 
 ## Admin
 
 | method | path | role | body | returns |
 | --- | --- | --- | --- | --- |
 | GET | `/api/admin/stats` | systemAdmin, auditor | | `AdminStats` – the numbers on the admin dashboard |
-| GET | `/api/admin/transactions?employeeId=&type=&eventId=&q=&page&pageSize` | systemAdmin, auditor | | `Paged<Transaction>`; `q` matches employee number or name |
+| GET | `/api/admin/transactions?employeeId=&type=&eventId=&q=&from=&to=&page&pageSize` | systemAdmin, auditor | | `Paged<Transaction>` – the ledger; `q` searches employee number, name and email, reason, event title, gift name, external reference and API client name |
+| GET | `/api/admin/transactions/export?…` | systemAdmin, auditor | | CSV of the same list |
+| GET | `/api/admin/checkins?employeeId=&eventId=&status=&q=&from=&to=&page&pageSize` | systemAdmin, auditor | | `Paged<CheckIn>` – attendance records across all events, newest first; `q` searches employee number, name and email, and event title |
+| GET | `/api/admin/checkins/export?…` | systemAdmin, auditor | | CSV of the same list |
 | POST | `/api/admin/transactions/{id}/revert` | systemAdmin | `{ reason: string }` | `Transaction` (the new reversal) |
 | POST | `/api/admin/adjustments` | systemAdmin | `{ employeeId: number; amount: number; reason: string }` | `Transaction` (`amount` is signed, non-zero) |
-| GET | `/api/admin/employees?q=&page&pageSize` | systemAdmin, auditor | | `Paged<Employee>` |
+| GET | `/api/admin/employees?q=&page&pageSize` | systemAdmin, auditor | | `Paged<Employee>`; `q` searches employee number, name, email and department |
+| GET | `/api/admin/employees/export?q=` | systemAdmin, auditor | | CSV: one row per employee with balance and lifetime totals |
+| GET | `/api/admin/employees/{id}` | systemAdmin, auditor | | `EmployeeDetail` – the lookup page for one person. Their history comes from the ledger, check-in and claim lists filtered by `employeeId`; points are awarded or deducted with `POST /api/admin/adjustments` |
 | PUT | `/api/admin/employees/{id}/roles` | systemAdmin | `{ roles: Role[] }` (empty = normal user) | `Employee` – `409 last_system_admin` if it would leave no system admin |
 | POST | `/api/admin/employees/{id}/cards` | systemAdmin | `{ cardUid: string; label: string | null }` | `Card` |
 | DELETE | `/api/admin/cards/{id}` | systemAdmin | | 204 |
@@ -252,6 +271,15 @@ type Card = { id: number; uid: string; label: string | null; isActive: boolean; 
 type Employee = {
   id: number; employeeNo: string; displayName: string; email: string; department: string | null;
   isActive: boolean; roles: Role[]; balance: number; cards: Card[];
+};
+type EmployeeDetail = Employee & {
+  // earned = event awards, adjustments (signed, so a deduction lowers it) and external credits, net of reversals;
+  // spent  = claims and external debits, net of cancels and refunds.
+  lifetimeEarned: number; lifetimeSpent: number;
+  preferredLocale: Locale | null; createdAt: string;
+  isProvisional: boolean;        // created at first sign-in, not yet confirmed by the HR push
+  checkInCount: number;          // approved check-ins
+  claimCount: number;            // claims that still count (not cancelled or refunded)
 };
 type AuditEntry = { id: number; actorName: string | null; action: string; entityType: string; entityId: string | null; summary: string | null; createdAt: string };
 ```
@@ -333,7 +361,7 @@ PointHub sends email through an SMTP server configured in `appsettings` / enviro
 type EmailTemplateKey =
   | 'checkInApproved' | 'checkInRejected'
   | 'redemptionRequested' | 'redemptionFulfilled' | 'redemptionCancelled'
-  | 'pointsAdjusted';
+  | 'redemptionRefunded' | 'pointsAdjusted';
 type EmailTemplate = {
   key: EmailTemplateKey; locale: Locale;
   subject: string; body: string;          // plain text with {{placeholders}}; blank lines separate paragraphs
@@ -429,14 +457,14 @@ The page treats a `card` message exactly like a keyboard-wedge read and sends `u
 
 | role | can do |
 | --- | --- |
-| *(none)* – normal user | See own points and history, check in to events, browse gifts, claim gifts, see own claims |
+| *(none)* – normal user | See and search own points and history, check in to events, search events and gifts, claim gifts, see own claims |
 | `eventAdmin` | Everything a normal user can, plus: create and edit events, show the check-in QR, import and re-match rosters, approve or reject check-ins, run the card station – for the events they run |
-| `giftAdmin` | Everything a normal user can, plus: manage gifts, pictures, stock and per-person limits; see all claims and mark them fulfilled, reopen or cancel them |
-| `systemAdmin` | Everything above for all events and gifts, plus: the full ledger, revert and adjust points, employees, roles and cards, API keys, seasonal theme, email templates, audit log |
-| `auditor` | Read-only: ledger, employees, audit log |
+| `giftAdmin` | Everything a normal user can, plus: manage gifts, pictures, stock and per-person limits; switch gifts on and off; see, search and export all claims and mark them fulfilled, reopen, cancel or refund them |
+| `systemAdmin` | Everything above for all events and gifts, plus: search and export the full ledger, attendance and employees, look up one employee and award or deduct points, revert points, roles and cards, API keys, seasonal theme, email templates, audit log |
+| `auditor` | Read-only, with search and export: ledger, attendance, claims, employees and the employee lookup; audit log |
 
 A person can hold several roles. Roles are granted by a system admin (`PUT /api/admin/employees/{id}/roles`); the first system admins come from `Auth:BootstrapAdminEmails`.
 
 ## Planned, not in v0
 
-- Outbound webhooks, reports/export
+- Outbound webhooks, summary reports (the record lists already export to CSV)

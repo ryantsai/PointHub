@@ -73,6 +73,7 @@ const kickoff = await (await eventAdmin.request.get(`${base}/api/host/events/${s
 const staff = await session('E0101');
 await shot(staff, 'dashboard', '/', { settle: 3200 });
 await shot(staff, 'gifts', '/gifts');
+await shot(staff, 'search', `/gifts?q=${encodeURIComponent('咖啡')}`);
 await shot(staff, 'claims', '/gifts', { before: (page) => page.getByRole('tab').nth(1).click() });
 for (const theme of THEMES) {
   const themed = await session('E0101', SMALL);
@@ -113,6 +114,9 @@ if (keys.length === 0) {
 await shot(admin, 'admin-dashboard', '/admin', { settle: 3600 });
 await shot(admin, 'admin-ledger', '/admin/ledger');
 await shot(admin, 'admin-employees', '/admin/employees');
+const lookedUp = (await (await admin.request.get(`${base}/api/admin/employees?q=E0101`)).json()).items[0];
+await shot(admin, 'admin-lookup', `/admin/employees/${lookedUp.id}`, { settle: 3000 });
+await shot(admin, 'admin-attendance', '/admin/attendance');
 await shot(admin, 'admin-themes', '/admin/themes', { settle: 3000 });
 await shot(admin, 'admin-email', `/admin/email?template=checkInApproved&locale=${locale}`, { settle: 3200 });
 await shot(admin, 'admin-api-keys', '/admin/api-clients');

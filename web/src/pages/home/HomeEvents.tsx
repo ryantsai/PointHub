@@ -5,9 +5,10 @@ import { useTranslation } from 'react-i18next';
 import type { EventSummary } from '../../api/types';
 import { CheckInStatusBadge } from '../../components/badges';
 import { Stagger, StaggerItem } from '../../components/Page';
-import { EmptyState, ErrorBlock, LoadingBlock } from '../../components/states';
+import { EmptyState, ErrorBlock, LoadingBlock, NoMatch } from '../../components/states';
 import { Coin, SectionTitle, SpriteTile } from '../../components/ui/bits';
 import { Panel } from '../../components/ui/Panel';
+import { SearchField } from '../../components/ui/SearchField';
 import { useFormat, useLocale, useLocalized } from '../../i18n/hooks';
 import { useNow } from '../../lib/hooks';
 import { itemVariants, springs } from '../../lib/motion';
@@ -107,17 +108,22 @@ function EventCard({ event, upcoming, now, onCheckIn }: { event: EventSummary; u
 interface HomeEventsProps {
   events: EventSummary[] | undefined;
   isPending: boolean;
+  /** The previous result is still shown while the next search loads. */
+  stale: boolean;
   error: unknown;
   onRetry: () => void;
+  /** The search box (`useUrlSearch`): `q` is what the list on screen was asked for. */
+  search: { text: string; onChange: (value: string) => void; q: string };
   /** Opens the QR scanner. */
   onCheckIn: () => void;
 }
 
 /**
  * Events in two groups. The API only lists events whose check-in is open; one whose start is still ahead is
- * shown as "Upcoming", the rest as "Open now". Each card carries my check-in state.
+ * shown as "Upcoming", the rest as "Open now". Each card carries my check-in state. The search box asks the
+ * server (`/api/events?q=`): title, description and location, every word, any language.
  */
-export function HomeEvents({ events, isPending, error, onRetry, onCheckIn }: HomeEventsProps) {
+export function HomeEvents({ events, isPending, stale, error, onRetry, search, onCheckIn }: HomeEventsProps) {
   const { t } = useTranslation();
   const now = useNow();
   const isUpcoming = (event: EventSummary) => new Date(event.startsAt).getTime() > now;
@@ -130,11 +136,12 @@ export function HomeEvents({ events, isPending, error, onRetry, onCheckIn }: Hom
     <Flex asChild direction="column" gap="4" minW="0">
       <motion.section variants={itemVariants} aria-label={t('dashboard.events')}>
         <SectionTitle icon={Ticket} title={t('dashboard.events')} />
+        <SearchField maxW={{ md: '420px' }} label={t('dashboard.searchEvents')} value={search.text} onChange={search.onChange} />
         {isPending && <LoadingBlock />}
         {Boolean(error) && !events && <ErrorBlock error={error} onRetry={onRetry} />}
-        {events?.length === 0 && <EmptyState message={t('dashboard.noEvents')} sprite={ticket} />}
+        {events?.length === 0 && (search.q !== '' ? <NoMatch q={search.q} onClear={() => search.onChange('')} /> : <EmptyState message={t('dashboard.noEvents')} sprite={ticket} />)}
         {groups.map((group) => (
-          <Flex key={group.key} direction="column" gap="3">
+          <Flex key={group.key} direction="column" gap="3" opacity={stale ? 0.55 : 1} transition="opacity 160ms">
             <Flex align="center" gap="2">
               {group.key === 'open' ? (
                 <Status.Root colorPalette="green" size="md">

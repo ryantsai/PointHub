@@ -12,7 +12,7 @@ using PointHub.Infrastructure.Persistence;
 namespace PointHub.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(PointHubDbContext))]
-    [Migration("20261124172220_InitialCreate")]
+    [Migration("20261125003036_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -172,6 +172,10 @@ namespace PointHub.Infrastructure.Persistence.Migrations
 
                     b.Property<bool>("RosterOnly")
                         .HasColumnType("bit");
+
+                    b.Property<string>("SearchText")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTimeOffset>("StartsAt")
                         .HasColumnType("datetimeoffset");
@@ -341,6 +345,10 @@ namespace PointHub.Infrastructure.Persistence.Migrations
                         .IsRequired()
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("rowversion");
+
+                    b.Property<string>("SearchText")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("Stock")
                         .HasColumnType("int");

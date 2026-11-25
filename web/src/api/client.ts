@@ -78,6 +78,54 @@ export const api = {
   delete: <T>(path: string) => request<T>('DELETE', path),
 };
 
+export type Download = {
+  filename: string;
+  /** The export hit the server's row cap (`X-Export-Truncated: true`): the file does not hold every row. */
+  truncated: boolean;
+};
+
+/** `filename*=UTF-8''…` wins over the plain `filename=`; both may be quoted. */
+function fileNameFrom(disposition: string | null, fallback: string): string {
+  if (!disposition) return fallback;
+  const encoded = /filename\*\s*=\s*UTF-8''([^;]+)/i.exec(disposition)?.[1];
+  if (encoded) {
+    try {
+      return decodeURIComponent(encoded.trim().replace(/^"|"$/g, ''));
+    } catch {
+      // malformed escape: fall back to the plain name
+    }
+  }
+  const plain = /filename\s*=\s*(?:"([^"]*)"|([^;]+))/i.exec(disposition);
+  return (plain?.[1] ?? plain?.[2])?.trim() || fallback;
+}
+
+/**
+ * GETs a file (the CSV exports) with the session cookie and hands it to the browser as a download, named as
+ * the server's `Content-Disposition` says. Errors are the same `ApiError`s as `api.get`.
+ */
+export async function downloadFile(path: string, query?: QueryParams, fallbackName = 'export.csv'): Promise<Download> {
+  let response: Response;
+  try {
+    response = await fetch(buildUrl(path, query), { headers: { Accept: 'text/csv, application/problem+json' }, credentials: 'same-origin' });
+  } catch {
+    throw new ApiError(0, 'network', 'Network error');
+  }
+  if (!response.ok) throw await toApiError(response);
+
+  const filename = fileNameFrom(response.headers.get('Content-Disposition'), fallbackName);
+  const url = URL.createObjectURL(await response.blob());
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  link.hidden = true;
+  document.body.append(link);
+  link.click();
+  link.remove();
+  // The download reads the blob after the click; give it time before the URL goes away.
+  window.setTimeout(() => URL.revokeObjectURL(url), 30_000);
+  return { filename, truncated: response.headers.get('X-Export-Truncated')?.toLowerCase() === 'true' };
+}
+
 /**
  * Multipart POST that reports upload progress (0–1), which `fetch` cannot do. Same headers and the same
  * `ApiError`s as `api.post`.

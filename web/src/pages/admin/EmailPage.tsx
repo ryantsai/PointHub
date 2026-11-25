@@ -23,7 +23,7 @@ import { EmailTemplates } from './EmailTemplates';
 import { Form, TableBlock, TwoLine } from './parts';
 
 const PAGE_SIZE = 25;
-const TEMPLATE_KEYS: EmailTemplateKey[] = ['checkInApproved', 'checkInRejected', 'redemptionRequested', 'redemptionFulfilled', 'redemptionCancelled', 'pointsAdjusted'];
+const TEMPLATE_KEYS: EmailTemplateKey[] = ['checkInApproved', 'checkInRejected', 'redemptionRequested', 'redemptionFulfilled', 'redemptionCancelled', 'redemptionRefunded', 'pointsAdjusted'];
 const STATUSES: EmailStatus[] = ['pending', 'sent', 'failed', 'skipped'];
 const STATUS_COLORS: Record<EmailStatus, string> = { pending: 'yellow', sent: 'green', failed: 'red', skipped: 'gray' };
 

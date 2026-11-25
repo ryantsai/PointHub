@@ -17,12 +17,16 @@ public sealed class RedemptionService(PointHubDbContext db, PointLedger ledger, 
 
         var gift = await db.Gifts.FirstOrDefaultAsync(g => g.Id == giftId, ct)
             ?? throw new DomainException(ErrorCodes.NotFound, "Gift not found.");
+        // Both rules are checked only here, at the moment of a new claim. Disabling a gift or lowering its
+        // limit later never touches claims that already exist.
         gift.EnsureRedeemable();
 
         if (gift.PerEmployeeLimit is { } limit)
         {
+            // Cancelled and refunded claims gave their items back, so they do not count.
             var already = await db.Redemptions
-                .Where(r => r.GiftId == giftId && r.EmployeeId == employeeId && r.Status != RedemptionStatus.Cancelled)
+                .Where(r => r.GiftId == giftId && r.EmployeeId == employeeId
+                    && (r.Status == RedemptionStatus.Requested || r.Status == RedemptionStatus.Fulfilled))
                 .SumAsync(r => (int?)r.Quantity, ct) ?? 0;
             if (already + quantity > limit)
                 throw new DomainException(ErrorCodes.GiftLimitReached, "Per-employee limit reached.");
@@ -82,25 +86,47 @@ public sealed class RedemptionService(PointHubDbContext db, PointLedger ledger, 
     public async Task<Redemption> CancelAsync(int redemptionId, int actorId, string reason, CancellationToken ct)
     {
         var redemption = await LoadAsync(redemptionId, ct);
-        var now = clock.GetUtcNow();
-        redemption.Cancel(actorId, now, reason);
-
-        var debit = await db.PointTransactions.FirstOrDefaultAsync(
-            t => t.RedemptionId == redemption.Id && t.Type == PointTransactionType.Redemption, ct);
-        if (debit is not null)
-            await ledger.PostAsync(redemption.EmployeeId, -debit.Amount, PointTransactionType.Reversal, reason, actorId, ct, reverses: debit);
-
-        redemption.Gift.ChangeStock(redemption.Quantity);
-        db.GiftStockMovements.Add(new GiftStockMovement
-        {
-            Gift = redemption.Gift, Delta = redemption.Quantity, Reason = $"Redemption cancelled: {reason}",
-            Redemption = redemption, CreatedById = actorId, CreatedAt = now,
-        });
+        redemption.Cancel(actorId, clock.GetUtcNow(), reason);
+        await GiveBackAsync(redemption, actorId, reason, restock: true, "Claim cancelled", ct);
 
         db.Audit(actorId, "redemption.cancel", nameof(Redemption), redemption.Id, reason, clock);
         await NotifyAsync(EmailTemplates.RedemptionCancelled, redemption, reason, ct);
         await db.SaveChangesAsync(ct);
         return redemption;
+    }
+
+    /// <summary>
+    /// Takes back a gift that was already handed over: the points go back to the employee through a reversal.
+    /// The items return to stock only when <paramref name="restock"/> is set (a used or damaged item should not).
+    /// Works whether or not the gift is still enabled, and frees up the person's limit for that gift.
+    /// </summary>
+    public async Task<Redemption> RefundAsync(int redemptionId, int actorId, string reason, bool restock, CancellationToken ct)
+    {
+        var redemption = await LoadAsync(redemptionId, ct);
+        redemption.Refund(actorId, clock.GetUtcNow(), reason);
+        await GiveBackAsync(redemption, actorId, reason, restock, "Gift refunded", ct);
+
+        db.Audit(actorId, "redemption.refund", nameof(Redemption), redemption.Id, $"{reason} (restocked: {restock})", clock);
+        await NotifyAsync(EmailTemplates.RedemptionRefunded, redemption, reason, ct);
+        await db.SaveChangesAsync(ct);
+        return redemption;
+    }
+
+    /// <summary>Returns the points of a claim (once: the ledger refuses a second reversal) and optionally its stock.</summary>
+    private async Task GiveBackAsync(Redemption redemption, int actorId, string reason, bool restock, string movementLabel, CancellationToken ct)
+    {
+        var debit = await db.PointTransactions.FirstOrDefaultAsync(
+            t => t.RedemptionId == redemption.Id && t.Type == PointTransactionType.Redemption, ct);
+        if (debit is not null)
+            await ledger.PostAsync(redemption.EmployeeId, -debit.Amount, PointTransactionType.Reversal, reason, actorId, ct, reverses: debit);
+
+        if (!restock) return;
+        redemption.Gift.ChangeStock(redemption.Quantity);
+        db.GiftStockMovements.Add(new GiftStockMovement
+        {
+            Gift = redemption.Gift, Delta = redemption.Quantity, Reason = $"{movementLabel}: {reason}",
+            Redemption = redemption, CreatedById = actorId, CreatedAt = clock.GetUtcNow(),
+        });
     }
 
     private Task NotifyAsync(string templateKey, Redemption redemption, string? reason, CancellationToken ct) =>

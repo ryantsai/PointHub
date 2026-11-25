@@ -24,6 +24,7 @@ function refreshEvent(qc: QueryClient, id: number, detail?: EventDetail) {
 function refreshAfterCheckIn(qc: QueryClient, eventId: number) {
   void qc.invalidateQueries({ queryKey: keys.hostEvent(eventId) });
   void qc.invalidateQueries({ queryKey: keys.pendingCheckIns });
+  void qc.invalidateQueries({ queryKey: keys.adminCheckIns() });
   for (const key of pointKeys) void qc.invalidateQueries({ queryKey: key });
 }
 

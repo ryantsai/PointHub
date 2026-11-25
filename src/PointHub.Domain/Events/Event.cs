@@ -58,6 +58,11 @@ public class Event
     public int CreatedById { get; set; }
     public DateTimeOffset CreatedAt { get; set; }
 
+    /// <summary>Title and description in every language plus the location, for search. Refreshed by the DbContext on save.</summary>
+    public string SearchText { get; private set; } = "";
+
+    public void RefreshSearchText() => SearchText = Common.SearchText.Join(Title, Description, Location);
+
     public List<EventHost> Hosts { get; set; } = [];
     public List<EventRosterEntry> Roster { get; set; } = [];
     public List<EventCheckIn> CheckIns { get; set; } = [];

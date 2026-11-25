@@ -42,7 +42,8 @@
     "adminDashboard": "儀表板",
     "sideEmployee": "員工",
     "sideManage": "管理",
-    "sideSwitch": "切換員工頁面與管理頁面"
+    "sideSwitch": "切換員工頁面與管理頁面",
+    "attendance": "出席紀錄"
   },
   "themes": {
     "default": "標準",
@@ -120,7 +121,8 @@
   "redemptionStatus": {
     "requested": "申請中",
     "fulfilled": "已領取",
-    "cancelled": "已取消"
+    "cancelled": "已取消",
+    "refunded": "已退還"
   },
   "login": {
     "title": "登入",
@@ -160,7 +162,9 @@
     "seeAll": "查看全部",
     "scanHint": "掃描活動現場的 QR Code，或在現場感應員工證。",
     "waitingApproval": "等待核准",
-    "checkedIn": "已報到"
+    "checkedIn": "已報到",
+    "searchEvents": "搜尋活動",
+    "searchHistory": "搜尋點數紀錄"
   },
   "checkin": {
     "title": "活動報到",
@@ -207,10 +211,13 @@
     "limitReached": "已達上限",
     "stockLeft": "剩餘 {{count}} 個",
     "limit": "每人限兌 {{count}} 個",
+    "limitLeft": "還可兌換 {{count}} 個",
     "redeemedTitle": "兌換成功！",
     "redeemedBody": "申請已送交禮品管理員，可在「我的兌換」查看進度。",
     "noGifts": "目前沒有可兌換的禮品。",
     "noRedemptions": "你還沒有兌換過任何禮品。",
+    "pointsReturned": "已退回 {{points}} 點",
+    "reason": "原因：{{reason}}",
     "columns": {
       "gift": "禮品",
       "points": "點數",
@@ -219,7 +226,8 @@
     },
     "needMore": "還差 {{points}} 點",
     "imageOf": "圖片 {{index}} / {{count}}",
-    "redeemed": "已兌換"
+    "redeemed": "已兌換",
+    "search": "搜尋禮品"
   },
   "host": {
     "eventsTitle": "活動",
@@ -385,7 +393,7 @@
     "ledger": {
       "title": "點數帳本",
       "subtitle": "所有點數異動紀錄。紀錄不會被刪除，更正會以新增一筆的方式處理。",
-      "search": "以員工編號或姓名搜尋",
+      "search": "搜尋員工、原因、活動或禮品",
       "type": "交易類型",
       "allTypes": "所有類型",
       "filterEmployee": "員工 #{{id}}",
@@ -419,7 +427,9 @@
       "amountHelp": "扣點請輸入負數。",
       "amountNonZero": "請輸入 0 以外的數字",
       "changeEmployee": "更換",
-      "clearFilter": "移除篩選"
+      "clearFilter": "移除篩選",
+      "emptyAll": "目前還沒有任何交易。",
+      "filterByEvent": "只顯示這個活動"
     },
     "gifts": {
       "title": "禮品管理",
@@ -430,8 +440,12 @@
       "editGift": "編輯禮品",
       "saved": "禮品已儲存",
       "nameRequired": "請填寫英文名稱",
-      "active": "上架中",
-      "hidden": "未上架",
+      "active": "啟用",
+      "hidden": "停用",
+      "disabledChip": "已停用",
+      "enableFailed": "無法啟用「{{gift}}」。",
+      "disableFailed": "無法停用「{{gift}}」。",
+      "disableInfo": "用開關即可啟用或停用禮品，變更會立即儲存。停用的禮品不會出現在禮品目錄，也無法兌換；已經存在的兌換申請不受影響，仍可照常發放、取消或退還。",
       "empty": "還沒有任何禮品，新增第一個吧。",
       "fields": {
         "name": "名稱",
@@ -439,10 +453,10 @@
         "imageUrl": "圖片網址",
         "pointCost": "所需點數",
         "perEmployeeLimit": "每人上限",
-        "perEmployeeLimitHelp": "每個人總共最多可以兌換幾個這項禮品。",
+        "perEmployeeLimitHelp": "每個人總共最多可以兌換幾個這項禮品。變更上限只會影響之後的新兌換，不會取消已經存在的兌換申請。",
         "initialStock": "初始庫存",
-        "isActive": "顯示在禮品目錄",
-        "isActiveHelp": "未上架的禮品無法兌換。"
+        "isActive": "啟用",
+        "isActiveHelp": "停用的禮品不會顯示在禮品目錄，也無法兌換；已經存在的兌換申請不受影響。"
       },
       "columns": {
         "stock": "庫存",
@@ -477,7 +491,9 @@
         "limited": "設定上限",
         "count": "每人上限數量",
         "unit": "個／每人",
-        "required": "請輸入 1 以上的數字，或選擇「不限」"
+        "required": "請輸入數字，或選擇「不限」。",
+        "invalid": "請輸入 1 以上的整數，不可為 0、負數或小數。",
+        "tooLarge": "上限最多為 {{max}}。如果需要更多，請選擇「不限」。"
       },
       "images": {
         "title": "圖片",
@@ -513,7 +529,7 @@
     "employees": {
       "title": "員工與卡片",
       "subtitle": "查看餘額，並管理用於感應報到的員工證。",
-      "search": "以員工編號、姓名或 Email 搜尋",
+      "search": "以員工編號、姓名、Email 或部門搜尋",
       "empty": "沒有符合條件的員工。",
       "inactive": "已停用",
       "noCards": "未綁定卡片",
@@ -615,18 +631,20 @@
     "claims": {
       "title": "兌換申請",
       "subtitle": "查看哪些禮品還沒發放，發放後將申請標記為完成。",
-      "search": "以員工編號或姓名搜尋",
+      "search": "搜尋員工、禮品或原因",
       "giftFilter": "禮品",
       "allGifts": "所有禮品",
       "tab": {
         "requested": "待發放",
         "fulfilled": "已發放",
-        "cancelled": "已取消"
+        "cancelled": "已取消",
+        "refunded": "已退還"
       },
       "empty": {
         "requested": "目前沒有待發放的禮品，所有申請都已處理完畢。",
         "fulfilled": "還沒有已發放的申請。",
-        "cancelled": "沒有已取消的申請。"
+        "cancelled": "沒有已取消的申請。",
+        "refunded": "沒有已退還的申請。"
       },
       "emptyFiltered": "沒有符合條件的申請。",
       "columns": {
@@ -640,6 +658,9 @@
       "fulfilledMoment": "發放完成！",
       "fulfilledBy": "發放人員",
       "cancelledBy": "取消人員",
+      "refundedBy": "退還人員",
+      "reason": "原因：{{reason}}",
+      "reasonHelp": "員工可以在「我的兌換」看到這個原因。",
       "undo": "復原",
       "undoTitle": "要取消「已發放」的標記嗎？",
       "undoBody": "{{name}} 的 {{gift}} 申請會回到「待發放」，點數與庫存不會變動。",
@@ -648,7 +669,17 @@
       "cancel": "取消申請",
       "cancelTitle": "取消申請",
       "cancelBody": "{{name}} 申請了 {{gift}} × {{quantity}}。取消後會將 {{points}} 點退還給員工，並將禮品加回庫存。",
-      "cancelled": "申請已取消，點數與庫存已退回。"
+      "cancelled": "申請已取消，點數與庫存已退回。",
+      "refund": "退還",
+      "refundTitle": "退還禮品",
+      "refundBody": "{{name}} 已領取 {{gift}} × {{quantity}}。退還後，{{points}} 點會退還給員工，申請會標記為「已退還」，且無法復原。",
+      "refundRestock": "將 {{gift}} × {{quantity}} 加回庫存",
+      "refundRestockHelp": "如果禮品沒有收回，或無法再次發放，請取消勾選。",
+      "refundConfirm": "確認退還",
+      "refunded": "已退還，點數已退回給員工。",
+      "refundedRestocked": "已退還，點數與庫存都已退回。",
+      "subtitleReadOnly": "所有兌換申請與目前的處理狀態。",
+      "readOnly": "此清單僅供檢視與匯出；發放、取消與退還由禮品管理員處理。"
     },
     "themes": {
       "title": "節慶主題",
@@ -745,6 +776,10 @@
           "name": "兌換申請已取消",
           "help": "申請被取消並退還點數時寄出。"
         },
+        "redemptionRefunded": {
+          "name": "禮品已退還",
+          "help": "管理員退還已發放的禮品時寄出。"
+        },
         "pointsAdjusted": {
           "name": "點數調整",
           "help": "管理員手動增減點數時寄出。"
@@ -788,6 +823,70 @@
         "attempts": "嘗試次數",
         "result": "寄出時間／錯誤"
       }
+    },
+    "attendance": {
+      "title": "出席紀錄",
+      "subtitle": "所有活動的報到紀錄。核准報到請至各活動的頁面處理。",
+      "search": "搜尋員工或活動",
+      "status": "報到狀態",
+      "allStatuses": "全部狀態",
+      "empty": "沒有符合條件的報到紀錄。",
+      "emptyAll": "目前還沒有報到紀錄。",
+      "columns": {
+        "checkedIn": "報到時間",
+        "employee": "員工",
+        "event": "活動",
+        "status": "狀態",
+        "method": "方式",
+        "points": "點數",
+        "decided": "審核者"
+      }
+    },
+    "lookup": {
+      "back": "員工與卡片",
+      "backToList": "返回員工列表",
+      "notFound": "找不到這位員工，連結可能已經失效。",
+      "employeeNo": "員工編號",
+      "name": "姓名",
+      "email": "Email",
+      "status": "帳號狀態",
+      "active": "啟用中",
+      "provisional": "暫時帳號",
+      "provisionalHelp": "首次登入時自動建立，尚未經人資系統確認。",
+      "since": "建立時間",
+      "balance": "餘額",
+      "lifetimeEarned": "累計獲得",
+      "lifetimeSpent": "累計使用",
+      "checkIns": "已核准報到",
+      "claims": "兌換申請",
+      "tab": {
+        "points": "點數紀錄",
+        "attendance": "出席紀錄",
+        "claims": "兌換申請"
+      },
+      "search": {
+        "points": "搜尋原因、活動或禮品",
+        "attendance": "搜尋活動",
+        "claims": "搜尋禮品或原因"
+      },
+      "empty": {
+        "points": "目前還沒有點數異動。",
+        "attendance": "目前還沒有報到紀錄。",
+        "claims": "目前還沒有兌換申請。"
+      },
+      "award": "發放點數",
+      "deduct": "扣除點數",
+      "awardTitle": "發放點數",
+      "deductTitle": "扣除點數",
+      "amountAward": "要發放的點數",
+      "amountDeduct": "要扣除的點數",
+      "amountPositive": "請輸入大於 0 的整數",
+      "reasonHelp": "員工會在自己的點數紀錄中看到這個原因。",
+      "negativeTitle": "餘額將變成負數",
+      "negativeBody": "目前餘額為 {{balance}} 點，扣除後會是 {{after}} 點。系統允許這樣操作，請再確認點數是否正確。",
+      "awarded": "已發放 {{points}} 點給 {{name}}",
+      "deducted": "已從 {{name}} 扣除 {{points}} 點",
+      "newBalance": "最新餘額"
     }
   },
   "errors": {
@@ -815,7 +914,7 @@
     "gift_inactive": "此禮品目前無法兌換。",
     "already_reversed": "這筆交易已經沖銷過了。",
     "not_reversible": "此類型的交易無法沖銷。",
-    "redemption_already_closed": "這筆兌換已經領取或取消。",
+    "redemption_already_closed": "這筆申請的狀態已經變更（已發放、已取消或已退還），無法執行這個操作。請重新整理後查看最新狀態。",
     "invalid_csv": "無法讀取檔案，請使用含 employeeNo 欄位的 UTF-8 CSV。",
     "invalid_image": "無法讀取這個圖片檔，或檔案太大（上限 8 MB）。",
     "too_many_images": "每項禮品最多 8 張圖片。",
@@ -830,5 +929,20 @@
     "title": "這個頁面發生問題",
     "body": "重新整理通常可以解決。如果持續發生，請通知系統管理員。",
     "reload": "重新整理"
+  },
+  "filters": {
+    "from": "起始日",
+    "to": "結束日",
+    "dateRange": "日期範圍",
+    "clear": "清除篩選",
+    "noMatch": "找不到符合「{{q}}」的結果。",
+    "clearSearch": "清除搜尋"
+  },
+  "export": {
+    "csv": "匯出 CSV",
+    "working": "匯出中…",
+    "done": "已儲存 {{file}}",
+    "truncated": "資料已達 {{max}} 筆的上限，{{file}} 只包含部分內容。請縮小篩選範圍後再匯出一次。",
+    "failed": "匯出失敗。{{reason}}"
   }
 }

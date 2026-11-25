@@ -8,20 +8,35 @@ import type {
   ApiClientInput,
   AuditEntry,
   Card,
+  CheckIn,
+  CheckInStatus,
   Employee,
+  EmployeeDetail,
   Paged,
   Role,
   Transaction,
   TransactionType,
 } from './types';
 
+/** The filters of the ledger and of its CSV export (`/api/admin/transactions/export` takes the same ones). */
 export type TransactionFilters = {
   employeeId: number | null;
   type: TransactionType | null;
   eventId: number | null;
   q: string;
-  page: number;
-  pageSize: number;
+  /** `YYYY-MM-DD`, inclusive, site time zone; `''` = open. */
+  from: string;
+  to: string;
+};
+
+/** The filters of the attendance list and of its CSV export. */
+export type CheckInFilters = {
+  employeeId: number | null;
+  eventId: number | null;
+  status: CheckInStatus | null;
+  q: string;
+  from: string;
+  to: string;
 };
 
 function refreshPoints(qc: QueryClient) {
@@ -37,10 +52,21 @@ export function useAdminStats() {
   });
 }
 
-export function useTransactions(filters: TransactionFilters) {
+export function useTransactions(filters: TransactionFilters, page: number, pageSize: number) {
+  const query = { ...filters, page, pageSize };
   return useQuery({
-    queryKey: keys.transactions(filters),
-    queryFn: () => api.get<Paged<Transaction>>('/api/admin/transactions', filters),
+    queryKey: keys.transactions(query),
+    queryFn: () => api.get<Paged<Transaction>>('/api/admin/transactions', query),
+    placeholderData: (previous) => previous,
+  });
+}
+
+/** Attendance records across all events, newest first (system admins and auditors). */
+export function useCheckIns(filters: CheckInFilters, page: number, pageSize: number) {
+  const query = { ...filters, page, pageSize };
+  return useQuery({
+    queryKey: keys.adminCheckIns(query),
+    queryFn: () => api.get<Paged<CheckIn>>('/api/admin/checkins', query),
     placeholderData: (previous) => previous,
   });
 }
@@ -63,12 +89,40 @@ export function useAdjustPoints() {
   });
 }
 
+/**
+ * "Award points" / "Deduct points" on the lookup page: one adjustment for one person, with a signed amount.
+ * It resolves once that person's totals have been read again, so the caller can show the balance the server
+ * now has (`employee` is null if only that re-read failed: the adjustment itself went through).
+ */
+export function useAdjustEmployeePoints(employeeId: number) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (vars: { amount: number; reason: string }) => {
+      const transaction = await api.post<Transaction>('/api/admin/adjustments', { employeeId, ...vars });
+      refreshPoints(qc);
+      const employee = await qc
+        .fetchQuery({ queryKey: keys.employee(employeeId), queryFn: () => api.get<EmployeeDetail>(`/api/admin/employees/${employeeId}`), staleTime: 0 })
+        .catch(() => null);
+      return { transaction, employee };
+    },
+  });
+}
+
 export function useEmployees(q: string, page: number, pageSize: number) {
   const query = { q, page, pageSize };
   return useQuery({
     queryKey: keys.employees(query),
     queryFn: () => api.get<Paged<Employee>>('/api/admin/employees', query),
     placeholderData: (previous) => previous,
+  });
+}
+
+/** One person with their totals: the lookup page. `404 not_found` for an id that does not exist. */
+export function useEmployee(id: number | null) {
+  return useQuery({
+    queryKey: keys.employee(id ?? 0),
+    queryFn: () => api.get<EmployeeDetail>(`/api/admin/employees/${id}`),
+    enabled: id !== null,
   });
 }
 
