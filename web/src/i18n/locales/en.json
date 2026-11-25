@@ -31,17 +31,18 @@
     "employees": "Employees & cards",
     "audit": "Audit log",
     "apiClients": "API keys",
-    "sectionHost": "Event admin",
-    "sectionAdmin": "Administration",
     "account": "Account menu",
     "signOut": "Sign out",
-    "toggleMenu": "Toggle navigation",
     "themePreviewing": "Preview: {{name}}",
     "exitPreview": "Exit theme preview",
     "claims": "Claims",
     "themes": "Seasonal theme",
     "email": "Email",
-    "openClaims": "{{count}} to hand over"
+    "openClaims": "{{count}} to hand over",
+    "adminDashboard": "Dashboard",
+    "sideEmployee": "Employee",
+    "sideManage": "Manage",
+    "sideSwitch": "Switch between the employee side and the management side"
   },
   "themes": {
     "default": "Standard",
@@ -132,7 +133,13 @@
     "devHint": "Pick a seeded account. This list only exists in development.",
     "noDevUsers": "No seeded accounts found.",
     "signInAs": "Sign in as {{name}}",
-    "oidcButton": "Sign in with your company account"
+    "oidcButton": "Sign in with your company account",
+    "windowsButton": "Sign in with your Windows account",
+    "windowsHint": "On a company PC this needs no password.",
+    "noAccount": "Your account is not registered as an active employee in PointHub. Contact HR or the system administrator.",
+    "errorGeneric": "Sign-in did not complete. Please try again.",
+    "signedOut": "You have signed out.",
+    "signingIn": "Signing you in…"
   },
   "dashboard": {
     "greeting": "Hello, {{name}}",
@@ -140,15 +147,20 @@
     "balance": "Point balance",
     "lifetimeEarned": "Earned so far",
     "lifetimeSpent": "Spent so far",
-    "openEvents": "Open events",
     "noEvents": "No events are open right now.",
-    "history": "Point history",
     "noTransactions": "No points yet. Check in at an event to earn your first.",
     "level": "Level {{level}}",
     "nextGoal": "{{points}} more points to get {{gift}}",
     "allAffordable": "You have enough points for any gift in the catalog.",
-    "browseGifts": "Browse gifts",
-    "goalProgress": "Progress to your next gift"
+    "goalProgress": "Progress to your next gift",
+    "events": "Events",
+    "openNow": "Open now",
+    "upcoming": "Upcoming",
+    "recentActivity": "Recent activity",
+    "seeAll": "See all",
+    "scanHint": "Scan the QR code at an event, or tap your staff badge there.",
+    "waitingApproval": "Waiting for approval",
+    "checkedIn": "Checked in"
   },
   "checkin": {
     "title": "Event check-in",
@@ -167,6 +179,17 @@
     "invalidBody": "It may have been replaced. Ask the event organiser to show the current QR code.",
     "codeExpiredTitle": "This code has expired",
     "codeExpiredBody": "The check-in code changes every few seconds. Scan the code on the event screen again."
+  },
+  "scanner": {
+    "title": "Scan to check in",
+    "hint": "Point the camera at the event’s QR code.",
+    "starting": "Starting the camera…",
+    "videoLabel": "Camera view",
+    "notCheckIn": "That is not a PointHub check-in code. Scan the code shown at the event.",
+    "unsupportedTitle": "This browser cannot scan QR codes here",
+    "blockedTitle": "The camera is not available",
+    "blockedHint": "To scan here, allow camera access for this site in your browser, then try again.",
+    "fallback": "Scan the event’s QR code with your phone camera, or tap your staff badge at the event."
   },
   "gifts": {
     "title": "Gifts",
@@ -195,7 +218,8 @@
       "status": "Status"
     },
     "needMore": "{{points}} more points needed",
-    "imageOf": "Picture {{index}} of {{count}}"
+    "imageOf": "Picture {{index}} of {{count}}",
+    "redeemed": "Redeemed"
   },
   "host": {
     "eventsTitle": "Events",
@@ -329,6 +353,35 @@
     "bridgeError": "reader problem: {{message}}"
   },
   "admin": {
+    "dashboard": {
+      "title": "Dashboard",
+      "subtitle": "Points, participation and what is waiting for you.",
+      "readOnly": "Read-only",
+      "issuedThisMonth": "Points issued this month",
+      "redeemedThisMonth": "Points redeemed this month",
+      "vsLastMonth": "vs last month",
+      "nothingLastMonth": "Nothing last month",
+      "participation": "Participation",
+      "participationDetail": "{{active}} / {{total}} employees",
+      "participationHelp": "Employees who checked in during the last 90 days",
+      "outstanding": "Outstanding points",
+      "pendingApprovals": "Pending approvals",
+      "allCaughtUp": "All caught up",
+      "openClaims": "Open claims",
+      "toClaims": "Go to claims",
+      "openClaimsHelp": "Waiting to be handed over",
+      "chartTitle": "Issued vs redeemed",
+      "chartSubtitle": "Last 12 weeks",
+      "issued": "Issued",
+      "redeemed": "Redeemed",
+      "noHistory": "No point movements yet.",
+      "approveAllConfirm": "Approve the {{count}} check-ins listed here and award the points?",
+      "queueCapped": "Showing the 100 oldest.",
+      "stockTitle": "Gift stock",
+      "lowStock": "Low stock",
+      "manageGifts": "Manage gifts",
+      "stockLabel": "Stock: {{count}}"
+    },
     "ledger": {
       "title": "Point ledger",
       "subtitle": "Every point movement. Nothing is deleted; corrections are new rows.",

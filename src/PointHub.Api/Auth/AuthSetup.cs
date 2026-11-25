@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.Negotiate;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.EntityFrameworkCore;
 using PointHub.Domain.Employees;
@@ -11,33 +12,65 @@ using PointHub.Infrastructure.Services;
 
 namespace PointHub.Api.Auth;
 
+/// <summary>How employees sign in. Exactly one mode is active; it is chosen in configuration (<c>Auth:Mode</c>).</summary>
+public enum AuthMode
+{
+    /// <summary>Password-less sign-in as a sample person. Local debugging only; refused in Production.</summary>
+    Dev = 0,
+    /// <summary>Microsoft Entra ID single sign-on (OpenID Connect).</summary>
+    EntraId = 1,
+    /// <summary>Integrated Windows authentication against on-premises Active Directory (IIS, or Kestrel with Negotiate).</summary>
+    Windows = 2,
+}
+
 public sealed class AuthOptions
 {
     public const string Section = "Auth";
 
-    /// <summary>One-click sign-in as any seeded employee. Development only; the app refuses to start with it in Production.</summary>
-    public bool DevLoginEnabled { get; set; }
+    public AuthMode Mode { get; set; } = AuthMode.EntraId;
 
-    /// <summary>Email addresses that become administrators when they sign in with SSO (bootstraps the first admins).</summary>
+    /// <summary>Email addresses that become system admins when they sign in (bootstraps the first admins). Both SSO modes.</summary>
     public string[] BootstrapAdminEmails { get; set; } = [];
-    public OidcOptions Oidc { get; set; } = new();
 
-    public bool OidcEnabled => !string.IsNullOrWhiteSpace(Oidc.Authority);
-    public string Mode => OidcEnabled ? "oidc" : "dev";
+    /// <summary>Create a provisional employee at first sign-in when HR has not pushed the person yet. Both SSO modes.</summary>
+    public bool AutoCreateEmployees { get; set; } = true;
 
-    public sealed class OidcOptions
+    public EntraIdOptions EntraId { get; set; } = new();
+    public WindowsOptions Windows { get; set; } = new();
+
+    public bool DevLoginEnabled => Mode == AuthMode.Dev;
+
+    /// <summary>The value the web client sees in <c>SiteConfig.authMode</c>.</summary>
+    public string ClientMode => Mode switch { AuthMode.EntraId => "oidc", AuthMode.Windows => "windows", _ => "dev" };
+
+    public sealed class EntraIdOptions
     {
+        /// <summary>Directory (tenant) id. Used to build the authority unless <see cref="Authority"/> is set.</summary>
+        public string? TenantId { get; set; }
+        /// <summary>Full authority URL; overrides <see cref="TenantId"/> (sovereign clouds, or another OpenID Connect provider).</summary>
         public string? Authority { get; set; }
         public string? ClientId { get; set; }
         public string? ClientSecret { get; set; }
         /// <summary>Claim that carries the address matched against Employee.Email (falls back to preferred_username).</summary>
         public string EmailClaim { get; set; } = "email";
-
         /// <summary>Optional claim with the HR employee number, if the tenant is configured to emit one.</summary>
         public string EmployeeNoClaim { get; set; } = "employeeid";
 
-        /// <summary>Create a provisional employee at first sign-in when HR has not pushed the person yet.</summary>
-        public bool AutoCreateEmployees { get; set; } = true;
+        public string? ResolvedAuthority => !string.IsNullOrWhiteSpace(Authority) ? Authority
+            : !string.IsNullOrWhiteSpace(TenantId) ? $"https://login.microsoftonline.com/{TenantId}/v2.0" : null;
+    }
+
+    public sealed class WindowsOptions
+    {
+        /// <summary>Read mail, employeeID and displayName of the signed-in account from Active Directory.</summary>
+        public bool UseDirectoryLookup { get; set; } = true;
+        /// <summary>
+        /// Fallback when the directory gives no address (or the lookup is off): the email is taken to be
+        /// <c>{logon name}@{EmailDomain}</c>. Leave empty to refuse sign-in when no address can be found.
+        /// </summary>
+        public string? EmailDomain { get; set; }
+        /// <summary>NetBIOS domain names whose accounts may sign in. Empty = any domain the server trusts.</summary>
+        public string[] AllowedDomains { get; set; } = [];
     }
 }
 
@@ -60,11 +93,15 @@ public static class AuthSetup
     public static IServiceCollection AddPointHubAuth(this IServiceCollection services, IConfiguration configuration, IHostEnvironment environment)
     {
         var options = configuration.GetSection(AuthOptions.Section).Get<AuthOptions>() ?? new AuthOptions();
-        if (options.DevLoginEnabled && environment.IsProduction())
-            throw new InvalidOperationException("Auth:DevLoginEnabled must not be set in Production.");
-        if (!options.DevLoginEnabled && !options.OidcEnabled)
-            throw new InvalidOperationException("No sign-in method configured: set Auth:Oidc:* (or Auth:DevLoginEnabled for local debugging).");
+        switch (options.Mode)
+        {
+            case AuthMode.Dev when environment.IsProduction():
+                throw new InvalidOperationException("Auth:Mode 'Dev' must not be used in Production. Use 'EntraId' or 'Windows'.");
+            case AuthMode.EntraId when options.EntraId.ResolvedAuthority is null || string.IsNullOrWhiteSpace(options.EntraId.ClientId):
+                throw new InvalidOperationException("Auth:Mode is 'EntraId' but Auth:EntraId:TenantId (or Authority) and Auth:EntraId:ClientId are not set.");
+        }
         services.AddSingleton(options);
+        services.AddScoped<SignInService>();
 
         var auth = services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme).AddCookie(cookie =>
         {
@@ -80,13 +117,16 @@ public static class AuthSetup
             cookie.Events.OnValidatePrincipal = RevalidateAsync;
         });
 
-        if (options.OidcEnabled)
+        // Either single sign-on only establishes who the person is. The session itself is always PointHub's own
+        // cookie, issued after the identity has been matched to an employee, so the rest of the API is the same
+        // in every mode.
+        if (options.Mode == AuthMode.EntraId)
         {
             auth.AddOpenIdConnect(oidc =>
             {
-                oidc.Authority = options.Oidc.Authority;
-                oidc.ClientId = options.Oidc.ClientId;
-                oidc.ClientSecret = options.Oidc.ClientSecret;
+                oidc.Authority = options.EntraId.ResolvedAuthority;
+                oidc.ClientId = options.EntraId.ClientId;
+                oidc.ClientSecret = options.EntraId.ClientSecret;
                 oidc.ResponseType = "code";
                 oidc.CallbackPath = "/api/auth/callback";
                 oidc.SignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
@@ -94,7 +134,22 @@ public static class AuthSetup
                 oidc.Scope.Add("email");
                 oidc.Scope.Add("profile");
                 oidc.Events.OnTokenValidated = context => MapToEmployeeAsync(context, options);
+                // Back to the SPA's sign-in page with a reason, instead of an error page from the middleware.
+                oidc.Events.OnRemoteFailure = context =>
+                {
+                    var reason = context.Failure?.Message == SignInService.NoAccountMessage ? SignInService.NoAccountError : SignInService.FailedError;
+                    context.Response.Redirect($"/login?error={reason}");
+                    context.HandleResponse();
+                    return Task.CompletedTask;
+                };
             });
+        }
+        else if (options.Mode == AuthMode.Windows)
+        {
+            // Under IIS this hands over to IIS's own Windows authentication; on Kestrel it speaks Negotiate itself.
+            // It is only ever used by the /api/auth/login endpoint, never as the default scheme.
+            auth.AddNegotiate();
+            services.AddSingleton<WindowsAccountResolver>();
         }
 
         auth.AddScheme<AuthenticationSchemeOptions, ApiKeyAuthenticationHandler>(ApiKeyAuthenticationHandler.SchemeName, null);
@@ -161,24 +216,39 @@ public static class AuthSetup
     /// <summary>Swaps the identity provider's claims for the matching PointHub employee, or fails the sign-in.</summary>
     private static async Task MapToEmployeeAsync(TokenValidatedContext context, AuthOptions options)
     {
-        var oidc = options.Oidc;
+        var entra = options.EntraId;
         var identity = context.Principal;
-        var email = identity?.FindFirstValue(oidc.EmailClaim) ?? identity?.FindFirstValue("preferred_username");
-        var directory = context.HttpContext.RequestServices.GetRequiredService<EmployeeDirectory>();
-        var employee = string.IsNullOrWhiteSpace(email)
-            ? null
-            : await directory.ResolveForSignInAsync(email.Trim(), identity?.FindFirstValue(oidc.EmployeeNoClaim), identity?.FindFirstValue("name"),
-                oidc.AutoCreateEmployees, context.HttpContext.RequestAborted);
+        var email = identity?.FindFirstValue(entra.EmailClaim) ?? identity?.FindFirstValue("preferred_username");
+        var signIn = context.HttpContext.RequestServices.GetRequiredService<SignInService>();
+        var principal = await signIn.ResolveAsync(email, identity?.FindFirstValue(entra.EmployeeNoClaim), identity?.FindFirstValue("name"),
+            context.HttpContext.RequestAborted);
 
-        if (employee is null)
-        {
-            context.Fail("No active PointHub employee matches this account.");
-            return;
-        }
+        if (principal is null) context.Fail(SignInService.NoAccountMessage);
+        else context.Principal = principal;
+    }
+}
+
+/// <summary>
+/// The step both single sign-on modes share: turn "the identity provider says this is X" into a PointHub
+/// session for the matching employee, creating a provisional employee or a bootstrap admin where configured.
+/// </summary>
+public sealed class SignInService(EmployeeDirectory directory, AuthOptions options, TimeProvider clock)
+{
+    public const string NoAccountMessage = "No active PointHub employee matches this account.";
+    /// <summary>Values of <c>/login?error=</c> that the web client translates.</summary>
+    public const string NoAccountError = "no_account";
+    public const string FailedError = "sign_in_failed";
+
+    /// <summary>Returns the cookie principal, or null when this person may not sign in.</summary>
+    public async Task<ClaimsPrincipal?> ResolveAsync(string? email, string? employeeNo, string? displayName, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(email)) return null;
+
+        var employee = await directory.ResolveForSignInAsync(email.Trim(), employeeNo, displayName, options.AutoCreateEmployees, ct);
+        if (employee is null) return null;
+
         if (options.BootstrapAdminEmails.Contains(employee.Email, StringComparer.OrdinalIgnoreCase))
-            await directory.EnsureBootstrapAdminAsync(employee, context.HttpContext.RequestAborted);
-
-        var clock = context.HttpContext.RequestServices.GetRequiredService<TimeProvider>();
-        context.Principal = CreatePrincipal(employee, clock.GetUtcNow());
+            await directory.EnsureBootstrapAdminAsync(employee, ct);
+        return AuthSetup.CreatePrincipal(employee, clock.GetUtcNow());
     }
 }

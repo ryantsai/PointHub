@@ -14,9 +14,11 @@ export type Problem = {
 };
 
 // Site
+export type AuthMode = 'dev' | 'oidc' | 'windows';
 export type SiteConfig = {
   appName: string;
-  authMode: 'dev' | 'oidc';
+  /** `dev`: pick a seeded account. `oidc`: Microsoft Entra ID. `windows`: integrated Windows authentication through IIS (on-premises AD). */
+  authMode: AuthMode;
   publicBaseUrl: string | null;
   /** A `ThemeKey`. Typed as string because a newer server may send a key this build does not know (→ `default`). */
   activeTheme: ThemeKey | (string & {});
@@ -112,6 +114,7 @@ export type CheckInPreview = { event: EventSummary; canCheckIn: boolean; blocked
 export type CheckIn = {
   id: number;
   eventId: number;
+  eventTitle: LocalizedText;
   employeeId: number;
   employeeNo: string;
   employeeName: string;
@@ -205,6 +208,29 @@ export type Redemption = {
 };
 
 // Admin
+/**
+ * The numbers on the admin dashboard. "Issued" = event awards, adjustments and external credits, net of their
+ * reverts; "redeemed" = gift claims and external debits, net of refunds. Months and weeks are in the site time zone.
+ */
+export type AdminStats = {
+  pointsIssuedThisMonth: number;
+  pointsIssuedLastMonth: number;
+  pointsRedeemedThisMonth: number;
+  pointsRedeemedLastMonth: number;
+  /** Active employees with at least one approved check-in in the last 90 days. */
+  activeParticipants: number;
+  /** Active employees. */
+  totalEmployees: number;
+  /** Sum of all balances. */
+  outstandingPoints: number;
+  /** Waiting for approval, all events. */
+  pendingCheckIns: number;
+  /** Claims not yet handed over. */
+  openClaims: number;
+  /** The last 12 weeks, oldest first; `weekStart` is a Monday, `YYYY-MM-DD`. */
+  weeks: AdminStatsWeek[];
+};
+export type AdminStatsWeek = { weekStart: string; issued: number; redeemed: number };
 export type Card = { id: number; uid: string; label: string | null; isActive: boolean; registeredAt: string };
 export type Employee = {
   id: number;

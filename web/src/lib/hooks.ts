@@ -18,3 +18,13 @@ export function useDebouncedValue<T>(value: T, delay: number) {
   }, [value, delay]);
   return [debounced] as const;
 }
+
+/** The current time as state, refreshed every `intervalMs`: for "has this started yet?" decisions during render. */
+export function useNow(intervalMs = 30_000) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const id = window.setInterval(() => setNow(Date.now()), intervalMs);
+    return () => window.clearInterval(id);
+  }, [intervalMs]);
+  return now;
+}

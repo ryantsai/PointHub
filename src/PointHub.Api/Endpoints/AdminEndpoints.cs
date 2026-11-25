@@ -31,6 +31,15 @@ public static class AdminEndpoints
             .RequireAuthorization(Policies.AdminRead);
 
         admin.MapSiteSettingsEndpoints();
+
+        admin.MapGet("/stats", async (AdminStatsService stats, CancellationToken ct) =>
+        {
+            var s = await stats.GetAsync(ct);
+            return new AdminStatsDto(
+                s.PointsIssuedThisMonth, s.PointsIssuedLastMonth, s.PointsRedeemedThisMonth, s.PointsRedeemedLastMonth,
+                s.ActiveParticipants, s.TotalEmployees, s.OutstandingPoints, s.PendingCheckIns, s.OpenClaims,
+                s.Weeks.Select(w => new AdminStatsWeekDto(w.WeekStart, w.Issued, w.Redeemed)).ToList());
+        }).RequireAuthorization(Policies.AdminRead);
     }
 
     private static void MapLedger(RouteGroupBuilder admin)

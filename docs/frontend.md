@@ -4,7 +4,7 @@ The SPA in `web/`. It implements [api.md](api.md); change the contract there fir
 
 ## Stack
 
-React 19 · Vite 8 · TypeScript 6 (strict) · Chakra UI 3 with Emotion (UI kit, "Arcade" design) · Motion (animation) · React Router 7 (declarative mode) · TanStack Query 5 · i18next · lucide-react (icons) · qrcode.react · dayjs.
+React 19 · Vite 8 · TypeScript 6 (strict) · Chakra UI 3 with Emotion (UI kit, "Arcade" design) · Motion (animation) · React Router 7 (declarative mode) · TanStack Query 5 · i18next · lucide-react (icons) · qrcode.react · dayjs · `@chakra-ui/charts` with Recharts (admin dashboard only, in its own chunk).
 
 The app was ported from Mantine to Chakra UI. [web/COMPONENTS.md](../web/COMPONENTS.md) lists the shared components and conventions; use them before writing something new.
 
@@ -34,10 +34,10 @@ npm run lint
 | `src/themes/` | theme system: `colors.ts` + `registry.ts` (the 13 themes, kit-neutral), `palette.ts` (OKLCH scales), `system.ts` (Chakra `createSystem`: tokens, recipes, global CSS), `colorMode.ts`, `runtime.ts` (colour tween), `effects.ts` + `SeasonalEffects.tsx` (ambient canvas), `preview.ts` |
 | `src/themes/sprites/` | pixel-art sprites as data and `<PixelSprite>` |
 | `src/features/cardReader/` | card UID sources behind `useCardReader` |
-| `src/components/` | app shell, route guards, status chips, page frame, states |
+| `src/components/` | app shell (`AppLayout`), route guards, status chips, page frame, states, gift catalogue, QR scanner |
 | `src/components/ui/` | Arcade building blocks: panel, hero, fields, modal, table, tabs, drop zone, toaster |
-| `src/pages/` | one file per screen; `host/` and `admin/` are lazy-loaded |
-| `src/lib/` | roles, session context, notifications, confirm dialog, form state, motion presets |
+| `src/pages/` | one file per screen; `home/` is the employee home; `host/` and `admin/` are lazy-loaded; `admin/dashboard/` holds the parts of the admin dashboard |
+| `src/lib/` | roles and where each role lands, session context, notifications, confirm dialog, form state, motion presets, check-in link parsing, gift helpers |
 
 Routes and who may see them are listed at the top of `src/App.tsx`. Guards only hide pages; the API enforces every rule again.
 
@@ -51,6 +51,44 @@ Routes and who may see them are listed at the top of `src/App.tsx`. Guards only 
 - Roles are `systemAdmin`, `eventAdmin`, `giftAdmin`, `auditor`; no role is a normal employee. Pages ask `can.*` in `src/lib/roles.ts`, never the role names.
 - Styling is Chakra style props with semantic tokens (`bg.panel`, `fg.muted`, `brand.solid`, `accent.solid` …), never hex colours. Theme art is pixel-art sprites, never emoji.
 - Motion: springs and variants from `src/lib/motion.ts`; animate `transform` and `opacity` only. `<MotionConfig reducedMotion="user">` and a global CSS rule reduce everything to short fades for people who ask for less motion.
+
+## Shell, home and dashboard
+
+The page composition follows the chosen "Arcade" prototype (`design-lab/chakra`); colours, sprites and icons are this app's own.
+
+**Shell.** One top bar: brand, a switch between the employee side and the management side (only for people with a role), the balance, language, light / dark and the account menu. Normal employees have no sidebar. The management side (everything under `/host` and `/admin`) keeps a sub-navigation: a card beside the content on desktop, a strip that scrolls sideways on narrower screens. Its entries depend on the role, with "Dashboard" first for system admins and auditors. Switching to the management side opens `/admin` for system admins and auditors, `/host/events` for event admins and `/admin/gifts` for gift admins (`managementHome` in `src/lib/roles.ts`).
+
+**Employee home (`/`).** One page: the hero (greeting, department, level ring with the balance, lifetime earned / spent, distance to the next gift, and the check-in panel), events split into "Open now" and "Upcoming", up to six gifts with "See all" to `/gifts`, and recent activity beside them. Once the hero has scrolled away a floating pill keeps the balance on screen.
+
+- The API lists open events only. One whose `startsAt` is still ahead is shown as upcoming; that is a display rule, the host may already accept check-ins for it.
+- Recent activity sits where the prototype has a leaderboard. There is deliberately no leaderboard and no rank: whether employees may see each other's points is an open decision.
+- `/gifts` stays the full catalogue plus "My claims"; both pages use the same `<GiftCatalog>`.
+
+**Check-in scanner.** The check-in buttons open a dialog that reads the camera with `navigator.mediaDevices.getUserMedia` and the browser's `BarcodeDetector`. When it sees a PointHub check-in link it opens that page of the app. A link is accepted only if it is http(s) on this page's origin or on `siteConfig.publicBaseUrl`, with the path `/c/{token}`; only the token and `k` are carried over, and anything else a QR code contains is ignored with a short notice (`src/lib/checkInLink.ts`). The camera stream is stopped the moment the dialog closes. Where `BarcodeDetector` or the camera is missing or refused (most desktop browsers, Firefox, Safari and every iPhone browser, plain-http LAN addresses) the dialog says so and tells the person to scan the event's QR code with the phone's own camera or to tap the staff badge. No scanning library is bundled: the phone's camera app opens the same link.
+
+**Admin dashboard (`/admin`).** For system admins and auditors. KPI tiles and the issued-vs-redeemed chart come from `GET /api/admin/stats`; the approvals queue from `GET /api/host/checkins/pending`, refreshed every 5 seconds; gift stock from `/api/admin/gifts`.
+
+- Month-over-month change is not shown when last month was 0 ("Nothing last month").
+- The pending tile counts the rows of the live queue, so it drops as rows leave. "Approve all" approves the listed rows one by one after a confirmation; there is no cross-event endpoint for it.
+- An auditor sees the tiles, the chart and the stock of the public catalogue. The queue is not drawn for them (the API refuses that list to auditors), and nothing on their dashboard is a button.
+- The page is its own chunk (it carries Recharts) and is warmed up in idle time for the people who can open it; employees never download it.
+- If a call fails, its block shows the translated error with a retry button and the rest of the page still works.
+
+## Sign-in
+
+`siteConfig.authMode` decides what the login page shows.
+
+| mode | login page |
+| --- | --- |
+| `dev` | a list of seeded accounts (Development only) |
+| `oidc` | one button: Microsoft Entra ID |
+| `windows` | one button: integrated Windows authentication through IIS (on-premises Active Directory) |
+
+Both single sign-on modes start with a full page navigation to `/api/auth/login?returnUrl=<path+query>`; the API redirects back when the handshake is done.
+
+- In `windows` mode the page tries this by itself once when it opens, so people on a domain PC never see it. It does not when the URL carries `signedOut=1` or `error=…`, and never more than once per browser tab (`sessionStorage` key `pointhub.windowsSignInTried`), so a failure cannot loop.
+- An explicit sign-out always ends on `/login?signedOut=1`, in every mode.
+- `/login?error=no_account` means the identity provider accepted the person but they are not an active PointHub employee. The page says so and keeps the sign-in button.
 
 ## Check-in links
 
@@ -122,11 +160,15 @@ Hardware caveats to settle with the real readers and cards:
 
 ## Not finished
 
-- Verified in a browser against the real API on sample data: sign-in and sign-out, the dashboard, check-in by static link and by rotating code, the live pending → approved switch, redeeming a gift, every event-admin tab, and every admin page as system admin, gift admin and auditor. Not exercised: OIDC sign-in, a real file drag onto the drop zones, mouse drag reorder of gift pictures, and reduced-motion mode in a real browser setting.
-- Levels on the dashboard are presentation only (one level per 500 lifetime points); the server knows nothing about them.
+- Verified in a browser against the real API on sample data: sign-in and sign-out, the employee home at phone and desktop width, the admin dashboard as system admin and as auditor (approving a row; the error state with the two calls stubbed to 404), check-in by static link and by rotating code, the live pending → approved switch, redeeming a gift, every event-admin tab, and every admin page as system admin, gift admin and auditor. Not exercised: OIDC sign-in, a real file drag onto the drop zones, mouse drag reorder of gift pictures, and reduced-motion mode in a real browser setting.
+- Levels on the employee home are presentation only (one level per 500 lifetime points); the server knows nothing about them.
+- The QR scanner was exercised in a desktop browser with a simulated camera and detector (accepting a check-in link, ignoring other codes, stopping the stream). It has not been used on a real phone camera. iPhones always get the fallback text, because Safari has no `BarcodeDetector`.
+- Windows sign-in was exercised with a simulated site config (button, hint, the single automatic attempt, `signedOut` and `error=no_account`). The real IIS handshake is untested.
+- Event cards show no capacity or attendee count (the prototype does): `EventSummary` carries neither.
+- The admin dashboard has no ledger table (the prototype does): the ledger is its own page.
 - Web NFC is untested on a real Android device, and the bridge is untested against the real `tools/PointHub.CardBridge` and a physical reader.
 - No unit or end-to-end tests yet.
 - Ledger filter chips show the employee/event id, not the name (no lookup-by-id endpoint).
 - Claim counts on the claims tabs and the nav badge come from list calls with `pageSize=1` (there is no count endpoint), and claim rows take their thumbnail from the gift list.
-- The initial bundle is about 245 kB gzipped JS (Chakra, Emotion and Motion); event-admin and admin pages load on demand. Vite warns about the main chunk size.
+- The JavaScript an employee downloads first is about 386 kB gzipped: the entry chunk (228 kB) plus the shared chunks it imports (Chakra, Emotion, Motion, the three locale files). Event-admin and admin pages load on demand; the admin dashboard chunk with the chart library is another 128 kB gzipped. Vite warns about the main chunk size.
 - No PWA/offline support; a kiosk that loses its connection shows a network error per tap.

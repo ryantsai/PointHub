@@ -21,6 +21,7 @@ public static class DependencyInjection
         services.Configure<UploadOptions>(configuration.GetSection(UploadOptions.Section));
         services.Configure<SmtpOptions>(configuration.GetSection(SmtpOptions.Section));
         services.AddScoped<GiftImageService>();
+        services.AddScoped<AdminStatsService>();
         services.AddScoped<EmailService>();
         services.AddSingleton<SmtpSender>();
         services.AddSingleton<EmailDispatcher>();

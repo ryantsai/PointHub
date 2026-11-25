@@ -3,12 +3,15 @@ import { Route, Routes } from 'react-router';
 import { AppLayout } from './components/AppLayout';
 import { RequireAuth, RequireRole } from './components/guards';
 import { CheckInPage } from './pages/CheckInPage';
-import { DashboardPage } from './pages/DashboardPage';
+import { loadAdminDashboard } from './pages/admin/dashboardLoader';
 import { GiftsPage } from './pages/GiftsPage';
+import { HomePage } from './pages/home/HomePage';
 import { LoginPage } from './pages/LoginPage';
 import { NotFoundPage } from './pages/NotFoundPage';
 
 // Host and admin screens are loaded on demand so employees on phones only download what they use.
+// The admin dashboard carries the chart library: it has its own loader, which the app shell also warms up.
+const AdminDashboardPage = lazy(() => loadAdminDashboard().then((m) => ({ default: m.AdminDashboardPage })));
 const ApiClientsPage = lazy(() => import('./pages/admin/ApiClientsPage').then((m) => ({ default: m.ApiClientsPage })));
 const AuditPage = lazy(() => import('./pages/admin/AuditPage').then((m) => ({ default: m.AuditPage })));
 const ClaimsPage = lazy(() => import('./pages/admin/ClaimsPage').then((m) => ({ default: m.ClaimsPage })));
@@ -25,9 +28,12 @@ const HostEventsPage = lazy(() => import('./pages/host/HostEventsPage').then((m)
  *   /login                 anonymous
  *   /, /gifts, /c/:token   any signed-in employee
  *   /host/*                eventAdmin, systemAdmin
+ *   /admin                 systemAdmin, auditor: the dashboard, landing page of the management side
  *   /admin/ledger|employees|audit   systemAdmin, auditor (auditor is read-only)
  *   /admin/gifts|claims    giftAdmin, systemAdmin
  *   /admin/themes|email|api-clients   systemAdmin
+ * The management side (/host, /admin) opens where lib/roles `managementHome` says: /admin for system admins and
+ * auditors, /host/events for event admins, /admin/gifts for gift admins.
  */
 export function App() {
   return (
@@ -35,7 +41,7 @@ export function App() {
       <Route path="/login" element={<LoginPage />} />
       <Route element={<RequireAuth />}>
         <Route element={<AppLayout />}>
-          <Route index element={<DashboardPage />} />
+          <Route index element={<HomePage />} />
           <Route path="c/:token" element={<CheckInPage />} />
           <Route path="gifts" element={<GiftsPage />} />
           <Route element={<RequireRole permission="host" />}>
@@ -43,6 +49,7 @@ export function App() {
             <Route path="host/events/:id" element={<EventDetailPage />} />
           </Route>
           <Route element={<RequireRole permission="viewAdmin" />}>
+            <Route path="admin" element={<AdminDashboardPage />} />
             <Route path="admin/ledger" element={<LedgerPage />} />
             <Route path="admin/employees" element={<EmployeesPage />} />
             <Route path="admin/audit" element={<AuditPage />} />

@@ -31,17 +31,18 @@
     "employees": "員工與卡片",
     "audit": "稽核紀錄",
     "apiClients": "API 金鑰",
-    "sectionHost": "活動管理",
-    "sectionAdmin": "系統管理",
     "account": "帳號選單",
     "signOut": "登出",
-    "toggleMenu": "開啟或收合選單",
     "themePreviewing": "預覽中：{{name}}",
     "exitPreview": "結束主題預覽",
     "claims": "兌換申請",
     "themes": "節慶主題",
     "email": "電子郵件",
-    "openClaims": "{{count}} 筆待發放"
+    "openClaims": "{{count}} 筆待發放",
+    "adminDashboard": "儀表板",
+    "sideEmployee": "員工",
+    "sideManage": "管理",
+    "sideSwitch": "切換員工頁面與管理頁面"
   },
   "themes": {
     "default": "標準",
@@ -132,7 +133,13 @@
     "devHint": "請選擇一個測試帳號。此清單只會出現在開發環境。",
     "noDevUsers": "找不到測試帳號。",
     "signInAs": "以 {{name}} 的身分登入",
-    "oidcButton": "使用公司帳號登入"
+    "oidcButton": "使用公司帳號登入",
+    "windowsButton": "以 Windows 帳號登入",
+    "windowsHint": "在公司電腦上不需要輸入密碼。",
+    "noAccount": "你的帳號尚未登記為 PointHub 的在職員工，請洽人資或系統管理員。",
+    "errorGeneric": "登入未完成，請再試一次。",
+    "signedOut": "你已登出。",
+    "signingIn": "正在登入…"
   },
   "dashboard": {
     "greeting": "{{name}}，你好",
@@ -140,15 +147,20 @@
     "balance": "點數餘額",
     "lifetimeEarned": "累計獲得",
     "lifetimeSpent": "累計使用",
-    "openEvents": "開放中的活動",
     "noEvents": "目前沒有開放中的活動。",
-    "history": "點數紀錄",
     "noTransactions": "還沒有點數。到活動現場報到，賺取第一筆點數吧。",
     "level": "等級 {{level}}",
     "nextGoal": "再 {{points}} 點就能兌換「{{gift}}」",
     "allAffordable": "你的點數足以兌換目錄中的任何禮品。",
-    "browseGifts": "瀏覽禮品",
-    "goalProgress": "距離下一份禮品的進度"
+    "goalProgress": "距離下一份禮品的進度",
+    "events": "活動",
+    "openNow": "報到中",
+    "upcoming": "即將舉行",
+    "recentActivity": "最近紀錄",
+    "seeAll": "查看全部",
+    "scanHint": "掃描活動現場的 QR Code，或在現場感應員工證。",
+    "waitingApproval": "等待核准",
+    "checkedIn": "已報到"
   },
   "checkin": {
     "title": "活動報到",
@@ -167,6 +179,17 @@
     "invalidBody": "連結可能已更新，請主辦人出示最新的 QR Code。",
     "codeExpiredTitle": "此報到碼已過期",
     "codeExpiredBody": "報到碼每隔數十秒就會更換，請重新掃描主辦人螢幕上的 QR Code。"
+  },
+  "scanner": {
+    "title": "掃描報到",
+    "hint": "請將鏡頭對準活動的 QR Code。",
+    "starting": "正在啟動相機…",
+    "videoLabel": "相機畫面",
+    "notCheckIn": "這不是 PointHub 的報到條碼，請掃描活動現場顯示的 QR Code。",
+    "unsupportedTitle": "此瀏覽器無法在這裡掃描 QR Code",
+    "blockedTitle": "無法使用相機",
+    "blockedHint": "若要在這裡掃描，請在瀏覽器中允許本網站使用相機，然後再試一次。",
+    "fallback": "請用手機相機掃描活動的 QR Code，或在活動現場感應員工證。"
   },
   "gifts": {
     "title": "禮品",
@@ -195,7 +218,8 @@
       "status": "狀態"
     },
     "needMore": "還差 {{points}} 點",
-    "imageOf": "圖片 {{index}} / {{count}}"
+    "imageOf": "圖片 {{index}} / {{count}}",
+    "redeemed": "已兌換"
   },
   "host": {
     "eventsTitle": "活動",
@@ -329,6 +353,35 @@
     "bridgeError": "讀卡機異常：{{message}}"
   },
   "admin": {
+    "dashboard": {
+      "title": "儀表板",
+      "subtitle": "點數、參與情況與待處理事項。",
+      "readOnly": "僅供檢視",
+      "issuedThisMonth": "本月發放點數",
+      "redeemedThisMonth": "本月兌換點數",
+      "vsLastMonth": "與上月相比",
+      "nothingLastMonth": "上月無紀錄",
+      "participation": "參與率",
+      "participationDetail": "{{active}} / {{total}} 人",
+      "participationHelp": "過去 90 天內曾報到的員工",
+      "outstanding": "未使用點數",
+      "pendingApprovals": "待核准",
+      "allCaughtUp": "全部處理完畢",
+      "openClaims": "待發放的兌換申請",
+      "toClaims": "前往兌換申請",
+      "openClaimsHelp": "等待發放",
+      "chartTitle": "發放與兌換",
+      "chartSubtitle": "過去 12 週",
+      "issued": "發放",
+      "redeemed": "兌換",
+      "noHistory": "目前還沒有點數異動。",
+      "approveAllConfirm": "要核准這裡列出的 {{count}} 筆報到並發放點數嗎？",
+      "queueCapped": "僅顯示最早的 100 筆。",
+      "stockTitle": "禮品庫存",
+      "lowStock": "庫存偏低",
+      "manageGifts": "管理禮品",
+      "stockLabel": "庫存：{{count}}"
+    },
     "ledger": {
       "title": "點數帳本",
       "subtitle": "所有點數異動紀錄。紀錄不會被刪除，更正會以新增一筆的方式處理。",

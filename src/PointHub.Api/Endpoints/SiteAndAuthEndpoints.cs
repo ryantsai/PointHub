@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.Negotiate;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -32,9 +33,34 @@ public static class SiteAndAuthEndpoints
             return Results.NoContent();
         }).AllowAnonymous();
 
-        auth.MapGet("/login", (string? returnUrl, AuthOptions options) => options.OidcEnabled
-            ? Results.Challenge(new AuthenticationProperties { RedirectUri = LocalUrlOrRoot(returnUrl) }, [OpenIdConnectDefaults.AuthenticationScheme])
-            : ApiProblem.NotFound("Single sign-on")).AllowAnonymous();
+        // Single sign-on entry point. The browser navigates here (not fetch); it always ends in a redirect.
+        auth.MapGet("/login", async (string? returnUrl, AuthOptions options, HttpContext http, CancellationToken ct) =>
+        {
+            var destination = LocalUrlOrRoot(returnUrl);
+            switch (options.Mode)
+            {
+                case AuthMode.EntraId:
+                    return Results.Challenge(new AuthenticationProperties { RedirectUri = destination }, [OpenIdConnectDefaults.AuthenticationScheme]);
+
+                case AuthMode.Windows:
+                    // First pass: no credentials yet, so answer 401 with "WWW-Authenticate: Negotiate". The browser
+                    // repeats the request with the Windows identity (silently on a domain PC in the intranet zone).
+                    var windows = await http.AuthenticateAsync(NegotiateDefaults.AuthenticationScheme);
+                    if (!windows.Succeeded || windows.Principal is null)
+                        return Results.Challenge(authenticationSchemes: [NegotiateDefaults.AuthenticationScheme]);
+
+                    var account = http.RequestServices.GetRequiredService<WindowsAccountResolver>().Resolve(windows.Principal);
+                    var principal = account is null ? null
+                        : await http.RequestServices.GetRequiredService<SignInService>().ResolveAsync(account.Email, account.EmployeeNo, account.DisplayName, ct);
+                    if (principal is null) return Results.LocalRedirect($"/login?error={SignInService.NoAccountError}");
+
+                    await http.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal);
+                    return Results.LocalRedirect(destination);
+
+                default:
+                    return ApiProblem.NotFound("Single sign-on");
+            }
+        }).AllowAnonymous();
 
         auth.MapGet("/dev-users", async (AuthOptions options, PointHubDbContext db, CancellationToken ct) =>
         {
@@ -57,7 +83,7 @@ public static class SiteAndAuthEndpoints
 
     public static async Task<SiteConfigDto> GetSiteConfigAsync(IOptions<SiteOptions> site, AuthOptions auth, SiteThemeService themes, CancellationToken ct) => new(
         site.Value.AppName,
-        auth.Mode,
+        auth.ClientMode,
         string.IsNullOrWhiteSpace(site.Value.PublicBaseUrl) ? null : site.Value.PublicBaseUrl.TrimEnd('/'),
         await themes.GetActiveThemeAsync(ct),
         Locales.All,

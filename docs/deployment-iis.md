@@ -43,9 +43,8 @@ Set these as environment variables on the application pool (IIS Manager → Conf
 | --- | --- |
 | `ASPNETCORE_ENVIRONMENT` | `Production` |
 | `ConnectionStrings__PointHub` | `Server=…;Database=PointHub;Trusted_Connection=True;Encrypt=True` |
-| `Auth__Oidc__Authority` | `https://login.microsoftonline.com/<tenant-id>/v2.0` |
-| `Auth__Oidc__ClientId` / `Auth__Oidc__ClientSecret` | from the Entra app registration |
-| `Auth__BootstrapAdminEmails__0` | the first administrator's sign-in address |
+| `Auth__Mode` | `EntraId` or `Windows` – see "Sign-in" below |
+| `Auth__BootstrapAdminEmails__0` | the first system admin's email address (as it is in Entra ID or in the AD `mail` attribute) |
 | `Site__PublicBaseUrl` | `https://pointhub.<your-domain>` – used in QR codes |
 | `Site__TimeZone` | `Asia/Taipei` |
 | `Uploads__AssetsPath` | Folder for gift pictures. Default `uploads/assets` under the site folder; point it at a folder **outside** the deployment folder (for example `D:\PointHubData\assets`) so a redeploy cannot wipe it |
@@ -53,14 +52,57 @@ Set these as environment variables on the application pool (IIS Manager → Conf
 | `Smtp__Username`, `Smtp__Password` | Only if the relay needs sign-in. The password is never stored in the database or shown in the admin screen |
 | `Smtp__FromAddress`, `Smtp__FromName` | Sender shown to employees, e.g. `pointhub@<your-domain>` |
 
-The app refuses to start in Production if no sign-in method is configured, or if `Auth:DevLoginEnabled` or `Database:SeedDevData` is on.
+The app refuses to start in Production with `Auth:Mode` `Dev`, with an incomplete Entra ID configuration, or with `Database:SeedDevData` on.
 
-### Entra ID app registration
+## Sign-in
+
+One switch, `Auth:Mode`, chooses how people are identified. Whichever is used, PointHub then matches the person to an employee by email or employee number and issues its own session cookie; roles and everything else work the same.
+
+| | `EntraId` | `Windows` |
+| --- | --- | --- |
+| Identity comes from | Microsoft Entra ID (OpenID Connect) | On-premises Active Directory (Kerberos / NTLM through IIS) |
+| Company PC on the domain | Usually silent, through the Microsoft sign-in page | Silent, no page at all |
+| Phone or PC that is not a domain device | Microsoft sign-in page, with MFA if the tenant requires it | Browser prompts for domain user name and password |
+| Works from the internet | Yes | Intranet / VPN only in practice |
+| Server needs | Outbound HTTPS to `login.microsoftonline.com` | IIS Windows Authentication feature; server joined to the domain |
+
+### Mode `EntraId`
+
+| setting | value |
+| --- | --- |
+| `Auth__EntraId__TenantId` | Directory (tenant) id. (`Auth__EntraId__Authority` overrides the URL built from it, for sovereign clouds.) |
+| `Auth__EntraId__ClientId`, `Auth__EntraId__ClientSecret` | from the app registration |
+| `Auth__EntraId__EmailClaim`, `Auth__EntraId__EmployeeNoClaim` | claim names; defaults `email` and `employeeid` |
+
+App registration:
 
 - Platform: **Web**. Redirect URI: `https://pointhub.<your-domain>/api/auth/callback`.
 - A client secret (or certificate).
-- Token configuration → optional claims on the ID token: `email`; add the employee number claim if the directory has one and set `Auth__Oidc__EmployeeNoClaim` to its name.
+- Token configuration → optional claims on the ID token: `email`; add the employee number claim if the directory has one.
 - Assign the users or groups who may use PointHub if the tenant requires assignment.
+
+### Mode `Windows`
+
+| setting | value |
+| --- | --- |
+| `Auth__Windows__UseDirectoryLookup` | `true` (default): read `mail`, `employeeID` and `displayName` of the signed-in account from Active Directory |
+| `Auth__Windows__EmailDomain` | Fallback when the account has no `mail` value, or when the lookup is off: the email is taken to be `<logon name>@<EmailDomain>`. Leave empty to refuse sign-in in that case |
+| `Auth__Windows__AllowedDomains__0`, `__1`, … | Optional. NetBIOS names of the domains whose accounts may sign in; empty = any domain the server trusts |
+
+IIS:
+
+1. Install the **Windows Authentication** role service (Server Manager → Web Server → Security).
+2. On the PointHub site → Authentication: enable **Windows Authentication** and keep **Anonymous Authentication enabled**. The sign-in page, the scripts and the API-key integration API are anonymous at the IIS level; only `/api/auth/login` asks for a Windows identity, and after that the session cookie is used. (If saving fails because the section is locked, unlock `system.webServer/security/authentication/windowsAuthentication` and `anonymousAuthentication` in the server's Configuration Editor.)
+3. The application pool identity must be able to read users in Active Directory. `ApplicationPoolIdentity` on a domain-joined server uses the machine account, which normally can; a domain service account also works.
+4. Kerberos: if the site is reached by a name other than the server's own, or the pool runs as a service account, register the SPN (`setspn -S HTTP/pointhub.<your-domain> <account>`). Without it browsers fall back to NTLM, which still works on the intranet.
+5. Silent sign-in needs the site in the browser's **Local intranet** zone (Edge / Chrome: group policy *Sites to Zone Assignment* or `AuthServerAllowlist`). Otherwise users get a credentials prompt.
+
+Things to know about Windows mode:
+
+- Matching is by the account's `mail` and `employeeID`. Check that these are filled in Active Directory, or set `EmailDomain` if mailbox names equal logon names.
+- People scanning a QR code with a personal phone get a browser prompt for domain credentials. If check-in from phones matters, prefer Entra ID, or use badge taps.
+- Signing out of PointHub ends the PointHub session only; on a domain PC the next visit signs the same person in again.
+- To try it without IIS on a Windows PC: `Auth__Mode=Windows` and `Auth__Windows__EmailDomain=<something>` as environment variables, then `dotnet run --project src/PointHub.Api`; Kestrel does the handshake itself.
 
 ### Data protection keys
 

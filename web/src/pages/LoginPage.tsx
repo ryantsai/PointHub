@@ -1,6 +1,7 @@
 import { Avatar, Box, Button, chakra, Flex, Grid, Heading, Text } from '@chakra-ui/react';
 import { CalendarCheck, Gift, LogIn, ScanQrCode } from 'lucide-react';
 import { motion } from 'motion/react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Navigate, useSearchParams } from 'react-router';
 import { useDevLogin, useDevUsers, useMe, useSiteConfig } from '../api/auth';
@@ -16,6 +17,7 @@ import { useErrorMessage } from '../i18n/hooks';
 import { itemVariants, listVariants } from '../lib/motion';
 import { safeReturnUrl } from '../lib/returnUrl';
 import { initials } from '../lib/text';
+import { claimWindowsSignInAttempt, windowsSignInAlreadyTried } from '../lib/windowsSignIn';
 import { useActiveTheme } from '../themes/activeTheme';
 
 function DevSignIn() {
@@ -87,6 +89,30 @@ function DevSignIn() {
   );
 }
 
+/**
+ * Single sign-on (`oidc` = Microsoft Entra ID, `windows` = integrated Windows authentication through IIS).
+ * Both start with a full page navigation to the API, which redirects back when the handshake is done.
+ */
+function SsoSignIn({ mode, href, error }: { mode: 'oidc' | 'windows'; href: string; error: string | null }) {
+  const { t } = useTranslation();
+  return (
+    <Flex direction="column" gap="3">
+      {error !== null && <Notice tone="error" title={error === 'no_account' ? t('login.noAccount') : t('login.errorGeneric')} />}
+      <Button asChild size="xl">
+        <a href={href}>
+          <LogIn aria-hidden />
+          {mode === 'windows' ? t('login.windowsButton') : t('login.oidcButton')}
+        </a>
+      </Button>
+      {mode === 'windows' && (
+        <Text fontSize="sm" color="fg.muted" fontWeight="medium">
+          {t('login.windowsHint')}
+        </Text>
+      )}
+    </Flex>
+  );
+}
+
 export function LoginPage() {
   const { t } = useTranslation();
   const theme = useActiveTheme();
@@ -94,6 +120,18 @@ export function LoginPage() {
   const config = useSiteConfig();
   const [params] = useSearchParams();
   const returnUrl = safeReturnUrl(params.get('returnUrl'));
+  const signedOut = params.get('signedOut') === '1';
+  const error = params.get('error');
+  const authMode = config.data?.authMode;
+  const ssoHref = `/api/auth/login?returnUrl=${encodeURIComponent(returnUrl)}`;
+
+  // Windows mode: people on a domain PC should never see this page, so try once by ourselves. Not after an
+  // explicit sign-out, not after an error, and never twice in one tab, so a failure cannot loop.
+  const [alreadyTried] = useState(windowsSignInAlreadyTried);
+  const autoSignIn = authMode === 'windows' && me.data === null && !signedOut && error === null && !alreadyTried;
+  useEffect(() => {
+    if (autoSignIn && claimWindowsSignInAttempt()) window.location.assign(ssoHref);
+  }, [autoSignIn, ssoHref]);
 
   // Already signed in (or the dev sign-in just succeeded): continue to where the visitor was heading.
   if (me.data) return <Navigate to={returnUrl} replace />;
@@ -147,17 +185,16 @@ export function LoginPage() {
               {returnUrl.startsWith('/c/') && (
                 <Notice icon={<ScanQrCode />}>{t('login.checkInNotice')}</Notice>
               )}
-              {(config.isPending || me.isPending) && <LoadingBlock />}
-              {config.error && <ErrorBlock error={config.error} onRetry={() => void config.refetch()} />}
-              {config.data?.authMode === 'dev' && !me.isPending && <DevSignIn />}
-              {config.data?.authMode === 'oidc' && !me.isPending && (
-                <Button asChild size="xl">
-                  <a href={`/api/auth/login?returnUrl=${encodeURIComponent(returnUrl)}`}>
-                    <LogIn aria-hidden />
-                    {t('login.oidcButton')}
-                  </a>
-                </Button>
+              {signedOut && <Notice tone="success" title={t('login.signedOut')} />}
+              {(config.isPending || me.isPending || autoSignIn) && <LoadingBlock />}
+              {autoSignIn && (
+                <Text fontSize="sm" color="fg.muted" fontWeight="medium" textAlign="center">
+                  {t('login.signingIn')}
+                </Text>
               )}
+              {config.error && <ErrorBlock error={config.error} onRetry={() => void config.refetch()} />}
+              {authMode === 'dev' && !me.isPending && <DevSignIn />}
+              {(authMode === 'oidc' || authMode === 'windows') && !me.isPending && !autoSignIn && <SsoSignIn mode={authMode} href={ssoHref} error={error} />}
             </Panel>
           </motion.div>
         </motion.div>

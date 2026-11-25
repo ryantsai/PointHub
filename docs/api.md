@@ -62,7 +62,7 @@ type Problem = { title: string; status: number; code: string; detail?: string; e
 ```ts
 type SiteConfig = {
   appName: string;
-  authMode: 'dev' | 'oidc';
+  authMode: 'dev' | 'oidc' | 'windows';   // dev sample sign-in, Microsoft Entra ID, or Windows authentication (on-prem AD)
   publicBaseUrl: string | null;   // when null, build links from window.location.origin
   activeTheme: string;            // a ThemeKey (see "Seasonal theme settings"); 'default' when no festival is on
   supportedLocales: Locale[];
@@ -77,7 +77,7 @@ type SiteConfig = {
 | GET | `/api/auth/me` | | `Me` or 401 |
 | GET | `/api/auth/dev-users` | | `DevUser[]` (Development only, 404 otherwise) |
 | POST | `/api/auth/dev-login` | `{ employeeNo }` | `Me` (Development only) |
-| GET | `/api/auth/login?returnUrl=/` | | 302 to the identity provider (`authMode: 'oidc'`) |
+| GET | `/api/auth/login?returnUrl=/` | | Single sign-on, for a full-page navigation (not fetch). `oidc`: 302 to Entra ID and back. `windows`: `401` with `WWW-Authenticate: Negotiate`, which the browser answers by itself, then 302. It ends at `returnUrl` (same-site paths only) with the session cookie set, or at `/login?error=no_account` (identified, but not an active employee) or `/login?error=sign_in_failed`. `404` in `dev` mode |
 | POST | `/api/auth/logout` | | 204 |
 
 ```ts
@@ -135,7 +135,8 @@ type EventSummary = {
 };
 type CheckInPreview = { event: EventSummary; canCheckIn: boolean; blockedCode: string | null }; // blockedCode is an error code from the table above
 type CheckIn = {
-  id: number; eventId: number; employeeId: number; employeeNo: string; employeeName: string; department: string | null;
+  id: number; eventId: number; eventTitle: LocalizedText;
+  employeeId: number; employeeNo: string; employeeName: string; department: string | null;
   method: CheckInMethod; status: CheckInStatus; onRoster: boolean; points: number;
   checkedInAt: string; decidedAt: string | null; decidedByName: string | null; note: string | null;
 };
@@ -156,6 +157,7 @@ type CheckIn = {
 | POST | `/api/host/events/{id}/roster/import?replace=true` | multipart, field `file` (CSV) | `RosterImportResult` |
 | POST | `/api/host/events/{id}/roster/rematch` | | `RosterImportResult` – re-compares the stored roster with the current employee master |
 | GET | `/api/host/events/{id}/checkins?status=` | | `CheckIn[]` (newest first) |
+| GET | `/api/host/checkins/pending` | | `CheckIn[]` – everything waiting for approval across the caller's events (all events for a system admin), oldest first, at most 100 |
 | POST | `/api/host/events/{id}/checkins/approve-all` | `{ onlyRoster: boolean }` | `{ approved: number }` |
 | POST | `/api/host/events/{id}/checkins/card` | `{ cardUid: string }` | `CheckIn` – station mode, approved immediately |
 | POST | `/api/host/events/{id}/checkins/manual` | `{ employeeNo: string }` | `CheckIn` – approved immediately |
@@ -223,6 +225,7 @@ type Redemption = {
 
 | method | path | role | body | returns |
 | --- | --- | --- | --- | --- |
+| GET | `/api/admin/stats` | systemAdmin, auditor | | `AdminStats` – the numbers on the admin dashboard |
 | GET | `/api/admin/transactions?employeeId=&type=&eventId=&q=&page&pageSize` | systemAdmin, auditor | | `Paged<Transaction>`; `q` matches employee number or name |
 | POST | `/api/admin/transactions/{id}/revert` | systemAdmin | `{ reason: string }` | `Transaction` (the new reversal) |
 | POST | `/api/admin/adjustments` | systemAdmin | `{ employeeId: number; amount: number; reason: string }` | `Transaction` (`amount` is signed, non-zero) |
@@ -233,6 +236,18 @@ type Redemption = {
 | GET | `/api/admin/audit?page&pageSize` | systemAdmin, auditor | | `Paged<AuditEntry>` |
 
 ```ts
+type AdminStats = {
+  // "Issued" = event awards, positive and negative adjustments and external credits, net of their reverts.
+  // "Redeemed" = gift claims and external debits, net of refunds. Months and weeks are in the site time zone.
+  pointsIssuedThisMonth: number; pointsIssuedLastMonth: number;
+  pointsRedeemedThisMonth: number; pointsRedeemedLastMonth: number;
+  activeParticipants: number;   // active employees with at least one approved check-in in the last 90 days
+  totalEmployees: number;       // active employees
+  outstandingPoints: number;    // sum of all balances
+  pendingCheckIns: number;      // waiting for approval, all events
+  openClaims: number;           // claims not yet handed over
+  weeks: { weekStart: string; issued: number; redeemed: number }[]; // the last 12 weeks, oldest first; weekStart is a Monday, `YYYY-MM-DD`
+};
 type Card = { id: number; uid: string; label: string | null; isActive: boolean; registeredAt: string }; // uid is normalized upper-case hex
 type Employee = {
   id: number; employeeNo: string; displayName: string; email: string; department: string | null;

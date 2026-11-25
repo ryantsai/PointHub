@@ -31,17 +31,18 @@
     "employees": "社員・カード",
     "audit": "監査ログ",
     "apiClients": "APIキー",
-    "sectionHost": "イベント管理",
-    "sectionAdmin": "管理",
     "account": "アカウントメニュー",
     "signOut": "サインアウト",
-    "toggleMenu": "メニューを開閉",
     "themePreviewing": "プレビュー中：{{name}}",
     "exitPreview": "テーマのプレビューを終了",
     "claims": "交換申請",
     "themes": "季節テーマ",
     "email": "メール",
-    "openClaims": "未対応 {{count}} 件"
+    "openClaims": "未対応 {{count}} 件",
+    "adminDashboard": "ダッシュボード",
+    "sideEmployee": "社員",
+    "sideManage": "管理",
+    "sideSwitch": "社員画面と管理画面の切り替え"
   },
   "themes": {
     "default": "標準",
@@ -132,7 +133,13 @@
     "devHint": "テスト用アカウントを選んでください。この一覧は開発環境でのみ表示されます。",
     "noDevUsers": "テスト用アカウントがありません。",
     "signInAs": "{{name}} としてサインイン",
-    "oidcButton": "会社のアカウントでサインイン"
+    "oidcButton": "会社のアカウントでサインイン",
+    "windowsButton": "Windows アカウントでサインイン",
+    "windowsHint": "会社のPCではパスワードの入力は不要です。",
+    "noAccount": "お使いのアカウントは、PointHub の有効な社員として登録されていません。人事部門またはシステム管理者にお問い合わせください。",
+    "errorGeneric": "サインインを完了できませんでした。もう一度お試しください。",
+    "signedOut": "サインアウトしました。",
+    "signingIn": "サインインしています…"
   },
   "dashboard": {
     "greeting": "{{name}} さん、こんにちは",
@@ -140,15 +147,20 @@
     "balance": "ポイント残高",
     "lifetimeEarned": "これまでの獲得",
     "lifetimeSpent": "これまでの利用",
-    "openEvents": "受付中のイベント",
     "noEvents": "現在受付中のイベントはありません。",
-    "history": "ポイント履歴",
     "noTransactions": "まだポイントがありません。イベントにチェックインして最初のポイントを獲得しましょう。",
     "level": "レベル {{level}}",
     "nextGoal": "あと {{points}} ポイントで「{{gift}}」と交換できます",
     "allAffordable": "カタログのどのギフトとも交換できるポイントがあります。",
-    "browseGifts": "ギフトを見る",
-    "goalProgress": "次のギフトまでの進み具合"
+    "goalProgress": "次のギフトまでの進み具合",
+    "events": "イベント",
+    "openNow": "受付中",
+    "upcoming": "開催予定",
+    "recentActivity": "最近の履歴",
+    "seeAll": "すべて見る",
+    "scanHint": "イベント会場のQRコードを読み取るか、社員証をタッチしてください。",
+    "waitingApproval": "承認待ち",
+    "checkedIn": "チェックイン済み"
   },
   "checkin": {
     "title": "イベントチェックイン",
@@ -167,6 +179,17 @@
     "invalidBody": "リンクが更新された可能性があります。主催者に最新のQRコードを表示してもらってください。",
     "codeExpiredTitle": "コードの有効期限が切れました",
     "codeExpiredBody": "チェックインコードは数十秒ごとに変わります。主催者の画面のコードをもう一度読み取ってください。"
+  },
+  "scanner": {
+    "title": "QRコードでチェックイン",
+    "hint": "イベントのQRコードにカメラを向けてください。",
+    "starting": "カメラを起動しています…",
+    "videoLabel": "カメラの映像",
+    "notCheckIn": "PointHub のチェックイン用コードではありません。イベント会場に表示されているコードを読み取ってください。",
+    "unsupportedTitle": "このブラウザではQRコードを読み取れません",
+    "blockedTitle": "カメラを使用できません",
+    "blockedHint": "ここで読み取るには、ブラウザでこのサイトのカメラ使用を許可してから、もう一度お試しください。",
+    "fallback": "スマートフォンのカメラでイベントのQRコードを読み取るか、会場で社員証をタッチしてください。"
   },
   "gifts": {
     "title": "ギフト",
@@ -195,7 +218,8 @@
       "status": "状況"
     },
     "needMore": "あと {{points}} ポイント必要です",
-    "imageOf": "画像 {{index}} / {{count}}"
+    "imageOf": "画像 {{index}} / {{count}}",
+    "redeemed": "交換しました"
   },
   "host": {
     "eventsTitle": "イベント",
@@ -329,6 +353,35 @@
     "bridgeError": "リーダーの問題：{{message}}"
   },
   "admin": {
+    "dashboard": {
+      "title": "ダッシュボード",
+      "subtitle": "ポイントの動き、参加状況、対応が必要な項目。",
+      "readOnly": "閲覧のみ",
+      "issuedThisMonth": "今月の付与ポイント",
+      "redeemedThisMonth": "今月の交換ポイント",
+      "vsLastMonth": "前月比",
+      "nothingLastMonth": "前月は実績なし",
+      "participation": "参加率",
+      "participationDetail": "{{active}} / {{total}} 人",
+      "participationHelp": "過去90日間にチェックインした社員",
+      "outstanding": "未使用ポイント残高",
+      "pendingApprovals": "承認待ち",
+      "allCaughtUp": "すべて処理済みです",
+      "openClaims": "未対応の交換申請",
+      "toClaims": "交換申請を開く",
+      "openClaimsHelp": "受け渡し待ち",
+      "chartTitle": "付与と交換",
+      "chartSubtitle": "過去12週間",
+      "issued": "付与",
+      "redeemed": "交換",
+      "noHistory": "ポイントの動きはまだありません。",
+      "approveAllConfirm": "ここに表示されている {{count}} 件のチェックインを承認し、ポイントを付与しますか？",
+      "queueCapped": "古い順に100件を表示しています。",
+      "stockTitle": "ギフト在庫",
+      "lowStock": "残りわずか",
+      "manageGifts": "ギフトを管理",
+      "stockLabel": "在庫：{{count}}"
+    },
     "ledger": {
       "title": "ポイント台帳",
       "subtitle": "すべてのポイントの動きです。記録は削除されず、訂正は新しい行として追加されます。",

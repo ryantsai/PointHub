@@ -61,7 +61,13 @@ await anonymous.close();
 
 // ---- Event admin (also gives us the check-in link of the sample event) ----------------------------------
 const eventAdmin = await session('E0002');
-const kickoff = await (await eventAdmin.request.get(`${base}/api/host/events/1`)).json();
+// The sample data's two events that are on now: one with a static link and approvals, one with a rotating code.
+const events = await (await eventAdmin.request.get(`${base}/api/host/events`)).json();
+const open = events.filter((event) => event.status === 'open' && new Date(event.startsAt) <= new Date());
+const staticEvent = open.find((event) => event.checkInMode === 'static');
+const rotatingEvent = open.find((event) => event.checkInMode === 'rotating');
+if (!staticEvent || !rotatingEvent) throw new Error('The sample data needs one open static and one open rotating event.');
+const kickoff = await (await eventAdmin.request.get(`${base}/api/host/events/${staticEvent.id}`)).json();
 
 // ---- Employee ---------------------------------------------------------------------------------------------
 const staff = await session('E0101');
@@ -82,11 +88,11 @@ await phone.close();
 
 // ---- Event admin pages --------------------------------------------------------------------------------------
 await shot(eventAdmin, 'event-form', '/host/events?new=1');
-await shot(eventAdmin, 'host-qr', '/host/events/4?tab=checkin', { settle: 3000 });
-await shot(eventAdmin, 'host-approvals', '/host/events/1?tab=approvals');
-await shot(eventAdmin, 'host-roster', '/host/events/1?tab=roster');
+await shot(eventAdmin, 'host-qr', `/host/events/${rotatingEvent.id}?tab=checkin`, { settle: 3000 });
+await shot(eventAdmin, 'host-approvals', `/host/events/${staticEvent.id}?tab=approvals`);
+await shot(eventAdmin, 'host-roster', `/host/events/${staticEvent.id}?tab=roster`);
 // A keyboard-wedge reader "types" the badge number quickly and presses Enter.
-await shot(eventAdmin, 'host-station', '/host/events/1?tab=station', {
+await shot(eventAdmin, 'host-station', `/host/events/${staticEvent.id}?tab=station`, {
   before: async (page) => { await page.locator('body').click({ position: { x: 5, y: 5 } }); await page.keyboard.type('04A23B1C', { delay: 8 }); await page.keyboard.press('Enter'); },
 });
 await eventAdmin.close();
@@ -104,6 +110,7 @@ if (keys.length === 0) {
   await admin.request.post(`${base}/api/admin/api-clients`, { headers, data: { name: '人資系統', scopes: ['employees:write'], expiresAt: null } });
   await admin.request.post(`${base}/api/admin/api-clients`, { headers, data: { name: '員工餐廳機台', scopes: ['points:read', 'points:write'], expiresAt: null } });
 }
+await shot(admin, 'admin-dashboard', '/admin', { settle: 3600 });
 await shot(admin, 'admin-ledger', '/admin/ledger');
 await shot(admin, 'admin-employees', '/admin/employees');
 await shot(admin, 'admin-themes', '/admin/themes', { settle: 3000 });

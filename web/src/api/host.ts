@@ -20,9 +20,10 @@ function refreshEvent(qc: QueryClient, id: number, detail?: EventDetail) {
   void qc.invalidateQueries({ queryKey: keys.events });
 }
 
-/** A decided check-in may have moved points, so refresh balances and ledgers too. */
+/** A decided check-in may have moved points, so refresh balances and ledgers too (and the cross-event queue). */
 function refreshAfterCheckIn(qc: QueryClient, eventId: number) {
   void qc.invalidateQueries({ queryKey: keys.hostEvent(eventId) });
+  void qc.invalidateQueries({ queryKey: keys.pendingCheckIns });
   for (const key of pointKeys) void qc.invalidateQueries({ queryKey: key });
 }
 
@@ -166,5 +167,41 @@ export function useDecideCheckIn(eventId: number) {
         ? api.post<CheckIn>(`/api/host/checkins/${decision.id}/approve`)
         : api.post<CheckIn>(`/api/host/checkins/${decision.id}/reject`, { reason: decision.reason }),
     onSettled: () => refreshAfterCheckIn(qc, eventId),
+  });
+}
+
+const PENDING_POLL_MS = 5000;
+const PENDING_POLL_AFTER_ERROR_MS = 30_000;
+
+/**
+ * Everything waiting for approval across the caller's events (all events for a system admin), oldest first,
+ * at most 100. Polls so the admin dashboard's queue stays live; backs off while the call is failing.
+ */
+export function usePendingCheckIns(enabled = true) {
+  return useQuery({
+    queryKey: keys.pendingCheckIns,
+    queryFn: () => api.get<CheckIn[]>('/api/host/checkins/pending'),
+    enabled,
+    refetchInterval: (query) => (query.state.status === 'error' ? PENDING_POLL_AFTER_ERROR_MS : PENDING_POLL_MS),
+  });
+}
+
+export type PendingDecision = { checkIn: CheckIn; approve: true } | { checkIn: CheckIn; approve: false; reason: string | null };
+
+/** Approve or reject a row of the cross-event queue. The row leaves the cached queue as soon as the server agrees. */
+export function useDecidePendingCheckIn() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (decision: PendingDecision) =>
+      decision.approve
+        ? api.post<CheckIn>(`/api/host/checkins/${decision.checkIn.id}/approve`)
+        : api.post<CheckIn>(`/api/host/checkins/${decision.checkIn.id}/reject`, { reason: decision.reason }),
+    onSuccess: (_result, decision) => {
+      qc.setQueryData<CheckIn[]>(keys.pendingCheckIns, (old) => old?.filter((row) => row.id !== decision.checkIn.id));
+    },
+    onSettled: (_result, _error, decision) => {
+      refreshAfterCheckIn(qc, decision.checkIn.eventId);
+      void qc.invalidateQueries({ queryKey: ['host', 'event', decision.checkIn.eventId, 'checkins'] });
+    },
   });
 }

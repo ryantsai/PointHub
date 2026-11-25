@@ -15,7 +15,7 @@ One deployable: `dotnet publish` builds the React app and ships it inside the AP
 | project | depends on | holds |
 | --- | --- | --- |
 | `PointHub.Domain` | nothing | Entities and every business rule that does not need a database: balance arithmetic, check-in state machine, rotating codes, roster matching, card UID normalisation, API key hashing, the festival calendar, email templates and rendering. Unit-tested. |
-| `PointHub.Infrastructure` | Domain | `PointHubDbContext`, migrations, and the services that combine rules with persistence: `PointLedger`, `CheckInService`, `RedemptionService`, `RosterService`, `EmployeeDirectory`, `SiteThemeService`, `GiftImageService`, `EmailService` + `EmailDispatcher`, `DevSeeder`. |
+| `PointHub.Infrastructure` | Domain | `PointHubDbContext`, migrations, and the services that combine rules with persistence: `PointLedger`, `CheckInService`, `RedemptionService`, `RosterService`, `EmployeeDirectory`, `SiteThemeService`, `GiftImageService`, `EmailService` + `EmailDispatcher`, `AdminStatsService`, `DevSeeder`. |
 | `PointHub.Api` | both | HTTP endpoints (minimal APIs grouped by audience), authentication, DTOs, error mapping. Handlers are thin: authorise, call a service, project to a DTO. |
 
 The HTTP contract is written down in [api.md](api.md) and mirrored by `Api/Contracts/Dtos.cs` and `web/src/api/types.ts`.
@@ -67,11 +67,15 @@ Three ways in, one record out (`EventCheckIn`, unique per event and employee):
 
 A notification is rendered from a template (built-in defaults in three languages, admin overrides in `EmailTemplates`) and written to `EmailMessages` **in the same save** as the change it reports. `EmailDispatcher`, a background service, sends pending rows through SMTP (MailKit) and retries failures with growing pauses up to five times. If SMTP is not configured the rows are marked skipped. Templates are plain text with `{{placeholders}}`; values are HTML-escaped, so neither a template nor an event title can inject markup.
 
+### Dashboard numbers
+
+`AdminStatsService` derives the admin dashboard from the ledger and current state on each request; nothing is stored. A reversal counts against whatever it reverses, so a reverted award lowers "issued" and a refunded claim lowers "redeemed". Months and weeks are cut in the site time zone, which is why the last quarter of ledger rows is bucketed in the application rather than in SQL; move that to a nightly rollup if the ledger grows large.
+
 ## Authentication and authorisation
 
 | caller | scheme | notes |
 | --- | --- | --- |
-| Employees, hosts, admins | HTTP-only same-site cookie | Issued after Entra ID sign-in (OIDC code flow; `Auth:Oidc:*`) or, in Development only, the sample sign-in. The cookie carries the employee id and roles; every five minutes the employee is re-read so deactivation and role changes take effect. |
+| Employees and admins | HTTP-only same-site cookie | Issued after single sign-on. `Auth:Mode` picks how the person is identified: `EntraId` (OIDC code flow), `Windows` (Negotiate / Kerberos against on-prem AD; `WindowsAccountResolver` reads `mail`, `employeeID` and `displayName` from the directory, or derives the email from the logon name) or, in Development only, `Dev`. `SignInService` then matches the identity to an employee by email or employee number, creates a provisional employee or bootstrap admin where configured, and issues the cookie. The cookie carries the employee id and roles; every five minutes the employee is re-read so deactivation and role changes take effect. |
 | Other applications | `X-Api-Key` | Only on `/api/integration/v1`. Policies name the scheme explicitly, so a cookie can never call the integration API and an API key can never call the employee or admin API. |
 
 - Roles: system admin, event admin, gift admin, auditor (read-only); no role is a normal user. Policies: `eventAdmin` (event admin or system admin), `giftAdmin`, `systemAdmin`, `adminRead` (system admin or auditor), and one per API scope. The role table is in [api.md](api.md#roles).

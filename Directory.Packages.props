@@ -6,6 +6,7 @@
     <DotNetPackagesVersion>10.0.15</DotNetPackagesVersion>
   </PropertyGroup>
   <ItemGroup>
+    <PackageVersion Include="Microsoft.AspNetCore.Authentication.Negotiate" Version="$(DotNetPackagesVersion)" />
     <PackageVersion Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" Version="$(DotNetPackagesVersion)" />
     <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="$(DotNetPackagesVersion)" />
     <PackageVersion Include="Microsoft.AspNetCore.SpaProxy" Version="$(DotNetPackagesVersion)" />
@@ -14,6 +15,7 @@
     <PackageVersion Include="MailKit" Version="5.0.0" />
     <PackageVersion Include="PCSC" Version="7.0.1" />
     <PackageVersion Include="SkiaSharp" Version="4.157.0" />
+    <PackageVersion Include="System.DirectoryServices.AccountManagement" Version="$(DotNetPackagesVersion)" />
     <PackageVersion Include="coverlet.collector" Version="6.0.4" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
     <PackageVersion Include="xunit" Version="2.9.3" />

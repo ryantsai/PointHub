@@ -25,7 +25,7 @@
         <p class="lead">員工參加公司活動即可累積點數，並用點數兌換禮品。活動管理員以 QR Code 或員工證感應發放點數，禮品管理員負責禮品目錄與發放，系統管理員確保每一筆帳都正確。本頁說明目前已完成的內容、畫面設計、各角色可以做的事，以及尚待決定的事項。</p>
         <ul class="facts">
           <li><b>網頁應用程式</b>，支援手機與電腦，提供英文、日文、繁體中文</li>
-          <li><b>登入</b>使用公司 Microsoft 帳號（Entra ID）</li>
+          <li><b>登入</b>可設定為公司 Microsoft 帳號（Entra ID），或公司網域帳號（Windows 驗證）</li>
           <li><b>報到方式</b>：QR Code 或連結、員工證（NFC／MIFARE）感應、人工輸入</li>
           <li><b>節慶主題</b>依台灣節慶行事曆自動切換</li>
           <li><b>電子郵件通知</b>透過公司 SMTP 伺服器寄送，範本可自行編輯</li>
@@ -39,7 +39,7 @@
         <h2>畫面設計</h2>
         <p>選定的設計方向是 <b>Arcade</b>：讓累積點數帶有一點遊戲感。點數餘額以等級圓環呈現，會隨著接近下一份好禮逐漸填滿；活動與禮品是像徽章一樣的卡片；報到成功或兌換禮品時會有小小的慶祝動畫。管理介面延續同樣的風格，但較為沉穩——它們首先是工作用的工具。</p>
         <div class="grid two">
-          <figure class="shot" data-shot="dashboard" data-caption="員工首頁：等級圓環、報到中的活動、近期點數紀錄"></figure>
+          <figure class="shot" data-shot="dashboard" data-caption="員工首頁：等級圓環與報到按鈕、活動、禮品與最近紀錄都在同一頁"></figure>
           <figure class="shot phone" data-shot="dashboard-mobile" data-caption="同一個頁面在手機上的樣子"></figure>
         </div>
         <h3>標準配色</h3>
@@ -83,14 +83,14 @@
         <div class="feature">
           <div>
             <h3>查看自己的點數</h3>
-            <p>點數餘額、距離下一份好禮的進度、累計獲得與使用，以及每一筆異動與原因。報到中的活動會顯示自己是否已報到、是否已通過審核。</p>
+            <p>首頁一頁就能看完：點數餘額與等級、距離下一份好禮的進度、累計獲得與使用、報到中與即將舉行的活動、禮品目錄，以及每一筆異動與原因。報到中的活動會顯示自己是否已報到、是否已通過審核。</p>
           </div>
           <figure class="shot" data-shot="dashboard" data-caption="首頁"></figure>
         </div>
         <div class="feature">
           <div>
             <h3>活動報到</h3>
-            <p>用手機相機掃描活動的 QR Code（或開啟連結），必要時先登入，再按一個按鈕即可。活動若需審核，頁面會等待，並在活動管理員核准時顯示慶祝畫面。已登記員工證的人，在會場的讀卡機感應一下就完成。</p>
+            <p>用手機相機掃描活動的 QR Code（或開啟連結，也可以按首頁的「報到」直接開啟掃描），必要時先登入，再按一個按鈕即可。活動若需審核，頁面會等待，並在活動管理員核准時顯示慶祝畫面。已登記員工證的人，在會場的讀卡機感應一下就完成。</p>
           </div>
           <figure class="shot phone" data-shot="checkin" data-caption="掃描 QR Code 後開啟的報到頁"></figure>
         </div>
@@ -166,6 +166,13 @@
 
       <section id="system-admins" data-title="系統管理員">
         <h2>系統管理員可以做什麼</h2>
+        <div class="feature">
+          <div>
+            <h3>總覽</h3>
+            <p>進入管理介面先看到全貌：本月發放與兌換的點數及與上月的比較、參與率、尚未使用的點數餘額、近 12 週的發放與兌換趨勢，以及所有活動的待核准報到與禮品庫存。待核准的報到可以直接在這裡處理。</p>
+          </div>
+          <figure class="shot" data-shot="admin-dashboard" data-caption="管理總覽"></figure>
+        </div>
         <div class="feature">
           <div>
             <h3>查看並更正每一筆點數</h3>

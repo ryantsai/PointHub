@@ -12,12 +12,10 @@ import { DataTable, type Column } from '../../components/ui/DataTable';
 import { Modal } from '../../components/ui/Modal';
 import { Notice } from '../../components/ui/Notice';
 import { useFormat, useLocalized } from '../../i18n/hooks';
+import { LOW_STOCK } from '../../lib/gifts';
 import { GiftEditor } from './GiftEditor';
 import { GiftStockForm } from './GiftStockForm';
 import { LinkButton, TwoLine } from './parts';
-
-/** Stock at or below this is called out in the list. */
-const LOW_STOCK = 5;
 
 function GiftsTable({ gifts, onEdit }: { gifts: Gift[] | undefined; onEdit: (gift: Gift) => void }) {
   const { t } = useTranslation();

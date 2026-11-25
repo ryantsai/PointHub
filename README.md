@@ -76,15 +76,17 @@ OpenAPI for the running API (Development only): <http://localhost:5180/openapi/v
 
 ## Configuration
 
-Everything is in `src/PointHub.Api/appsettings.json`; `appsettings.Development.json` overrides it for local debugging. In production set values with environment variables (`ConnectionStrings__PointHub`, `Auth__Oidc__ClientSecret`, …) rather than editing files, and never commit secrets.
+Everything is in `src/PointHub.Api/appsettings.json`; `appsettings.Development.json` overrides it for local debugging. In production set values with environment variables (`ConnectionStrings__PointHub`, `Auth__Mode`, `Auth__EntraId__ClientSecret`, …) rather than editing files, and never commit secrets.
 
 | section | purpose |
 | --- | --- |
 | `ConnectionStrings:PointHub` | SQL Server connection string |
 | `Database:AutoMigrate` / `SeedDevData` | Apply migrations / load sample data at start-up (development only; the app refuses to seed in Production) |
-| `Auth:Oidc:*` | Microsoft Entra ID single sign-on |
-| `Auth:BootstrapAdminEmails` | People who become admins when they first sign in |
-| `Auth:DevLoginEnabled` | Password-less sample sign-in; the app refuses to start with it in Production |
+| `Auth:Mode` | How people sign in: `EntraId`, `Windows` (on-prem Active Directory through IIS) or `Dev` (sample sign-in; refused in Production) |
+| `Auth:EntraId:*` | Tenant id, client id and secret, claim names (mode `EntraId`) |
+| `Auth:Windows:*` | Directory lookup, fallback email domain, allowed domains (mode `Windows`) |
+| `Auth:AutoCreateEmployees` | Create a provisional employee at first sign-in (both single sign-on modes) |
+| `Auth:BootstrapAdminEmails` | People who become system admins when they first sign in |
 | `Site:*` | App name, public URL for QR codes, default language, time zone, seasonal theme schedule |
 | `CheckIn:*` | Rotating QR code period and grace |
 | `Integration:RequestsPerMinute` | Rate limit per API key |

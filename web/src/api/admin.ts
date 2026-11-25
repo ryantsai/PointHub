@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tansta
 import { api } from './client';
 import { keys, pointKeys } from './keys';
 import type {
+  AdminStats,
   ApiClient,
   ApiClientCreated,
   ApiClientInput,
@@ -25,6 +26,15 @@ export type TransactionFilters = {
 
 function refreshPoints(qc: QueryClient) {
   for (const key of pointKeys) void qc.invalidateQueries({ queryKey: key });
+}
+
+/** The numbers on the admin dashboard (system admins and auditors). Refreshed every minute while it is open. */
+export function useAdminStats() {
+  return useQuery({
+    queryKey: keys.adminStats,
+    queryFn: () => api.get<AdminStats>('/api/admin/stats'),
+    refetchInterval: 60_000,
+  });
 }
 
 export function useTransactions(filters: TransactionFilters) {

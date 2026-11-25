@@ -27,6 +27,12 @@ export function useMe() {
   });
 }
 
+// Set by an explicit sign-out, cleared by the next sign-in. The route guard reads it to send the person to
+// `/login?signedOut=1` instead of `/login?returnUrl=…`, so single sign-on does not sign them straight back in.
+let signedOutByChoice = false;
+export const SIGNED_OUT_PATH = '/login?signedOut=1';
+export const wasExplicitSignOut = () => signedOutByChoice;
+
 /**
  * Swaps the signed-in user and drops everything cached for the previous one.
  * The `auth` queries are updated in place rather than removed: removing a query that a mounted
@@ -49,7 +55,10 @@ export function useDevLogin() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (employeeNo: string) => api.post<Me>('/api/auth/dev-login', { employeeNo }),
-    onSuccess: (me) => switchUser(qc, me),
+    onSuccess: (me) => {
+      signedOutByChoice = false;
+      switchUser(qc, me);
+    },
   });
 }
 
@@ -57,6 +66,14 @@ export function useLogout() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: () => api.post<void>('/api/auth/logout'),
+    // Raised before the request: a poll that comes back 401 while the sign-out is in flight clears the
+    // session first, and the route guard must already know this was the person's own choice.
+    onMutate: () => {
+      signedOutByChoice = true;
+    },
+    onError: () => {
+      signedOutByChoice = false;
+    },
     onSuccess: () => switchUser(qc, null),
   });
 }

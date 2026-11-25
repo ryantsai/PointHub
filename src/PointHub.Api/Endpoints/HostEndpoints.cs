@@ -133,6 +133,15 @@ public static class HostEndpoints
             return Results.Ok(await db.CheckInDtoAsync(checkIn.Id, ct));
         });
 
+        // Everything waiting for a decision across the caller's events; the admin dashboard's queue.
+        group.MapGet("/checkins/pending", async (ClaimsPrincipal user, PointHubDbContext db, CancellationToken ct) =>
+        {
+            var events = Hosted(db, user).Select(e => e.Id);
+            return await db.CheckIns.AsNoTracking()
+                .Where(c => c.Status == CheckInStatus.Pending && events.Contains(c.EventId))
+                .OrderBy(c => c.Id).Take(100).Select(CheckInDto.Projection).ToListAsync(ct);
+        });
+
         group.MapPost("/checkins/{id:int}/approve", async (int id, ClaimsPrincipal user, PointHubDbContext db, CheckInService checkIns, CancellationToken ct) =>
         {
             if (await HostedCheckInAsync(db, user, id, ct) is not { } checkIn) return ApiProblem.NotFound("Check-in");

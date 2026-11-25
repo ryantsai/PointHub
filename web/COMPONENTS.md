@@ -11,6 +11,16 @@ The app is built on Chakra UI v3 in the "Arcade" design (design source: `design-
 - A file that exports a component exports only components (lint). Constants and stores live in `.ts` files (`lib/toaster.ts`, `lib/confirm.ts`, `components/ui/tableStyles.ts`).
 
 
+## Shell and page composition
+
+The layout follows the "Arcade" design (`design-lab/chakra`): its composition, with this app's own themes, sprites and icons.
+
+- **Shell** (`components/AppLayout`): one top bar for everyone: brand, the Employee / Manage switch (only for people with a role: `hasManagement(me)` in `lib/roles`), Home / Gifts links on the employee side (from `md`; phones get the bottom tab bar), then balance chip, language, light / dark, account menu. On a phone the switch wraps to a second row, and that two-row bar does not stick.
+- **Employee side** (`/`, `/gifts`, `/c/:token`): no sidebar, content up to 1240 px.
+- **Management side** (everything under `/host` and `/admin`, `isManagementPath`): a sub-navigation card beside the content from `lg` (236 px, sticky), a strip that scrolls sideways above it below `lg`. One flat list filtered by `can.*`; "Dashboard" comes first for people with `can.viewAdmin`. The switch opens `managementHome(me)`: `/admin` for system admins and auditors, `/host/events` for event admins, `/admin/gifts` for gift admins. A new management page only needs its route in `App.tsx` and an entry in `useManagementNav`.
+- **Employee home** (`pages/home/`): `HomeHero` (greeting, department chip, level ring with the balance, lifetime totals, next gift, check-in panel), `HomeEvents` ("Open now" / "Upcoming"), `<GiftCatalog limit={6}>` with "See all", `HomeActivity` in the side column, and a floating balance pill once the hero has scrolled away. There is deliberately no leaderboard and no rank chip.
+- **Admin dashboard** (`pages/admin/AdminDashboardPage` + `pages/admin/dashboard/`): `KpiRow`, `TrendChart`, `PendingQueue`, `StockList`. It is its own lazy chunk because it carries the chart library; load it only through `pages/admin/dashboardLoader.ts`. What a person may not do is not drawn (no queue without `can.host`, no editor links without `can.manageGifts`).
+
 ## Shared layer
 
 | What | Import | Use |
@@ -35,12 +45,16 @@ The app is built on Chakra UI v3 in the "Arcade" design (design source: `design-
 | Number tween | `components/AnimatedNumber` | `<AnimatedNumber value from? format? />` |
 | Result moment | `components/StatusBurst`, `components/ui/Burst` | `<StatusBurst tone="success\|pending\|error" size? />`; `<Burst trigger={n} />` inside a `position: relative` box |
 | Progress ring | `components/ui/LevelRing` | `<LevelRing percent label top? bottom?>centre</LevelRing>` (on a hero) |
+| Gift catalogue | `components/GiftCatalog` | `<GiftCatalog limit? columns? />` – the cards with redeem / "need N more" / out of stock / limit reached, the confirm dialog and the reward moment on the card. Used by the home page and `/gifts`. Helpers in `lib/gifts`: `remainingAllowance`, `nextGoal`, `LOW_STOCK` |
+| QR scanner | `components/CheckInScanner` | `<CheckInScanner opened onClose />` – camera + `BarcodeDetector`; opens only what `parseCheckInLink` (`lib/checkInLink`) accepts; shows a fallback where it cannot scan; the camera stops when the dialog closes |
 | Gift pictures | `components/GiftGallery` | `<GiftGallery images alt dimmed? />`, `<GiftThumb images size? shape? />` (`shape="square"`: neutral framed tile for tables and lists) |
 | Upload with progress | `api/client` | `uploadWithProgress<T>(path, formData, onProgress)` – multipart POST over XHR, same `ApiError`s as `api.*` (see `api/gifts` `useUploadGiftImage`) |
 | Admin page parts | `pages/admin/parts` | `<TableBlock>` (toolbar + table + pager), `<Toolbar>`, `<TwoLine primary secondary>`, `<LinkButton>`, `<Form onSubmit>` (column form, `noValidate`), `<FormActions>` |
-| Hooks | `lib/hooks` | `useDisclosure()`, `useDebouncedValue(value, ms)` |
+| Hooks | `lib/hooks` | `useDisclosure()`, `useDebouncedValue(value, ms)`, `useNow(intervalMs?)` (the time as state: never call `Date.now()` while rendering) |
+| Shell sizes | `lib/layout` | `HEADER_HEIGHT`, `TAB_BAR_HEIGHT` – for anything sticky or fixed that has to clear the top bar or the phone tab bar |
+| Charts | `@chakra-ui/charts` + `recharts` | Only inside the admin dashboard chunk. `useChart({ data, series: [{ name, color: 'brand.solid' }] })`, `chart.color('fg.muted')` for axes and grid: tokens become CSS variables, so a chart follows the theme and the colour scheme (see `pages/admin/dashboard/TrendChart`) |
 | Motion presets | `lib/motion` | `springs.soft\|bouncy\|snap`, `pageVariants`, `listVariants`, `itemVariants`, `popVariants` |
-| Guards, session | `components/guards`, `lib/session` | `<RequireAuth>`, `<RequireRole permission>`, `useSession()` |
+| Guards, session | `components/guards`, `lib/session`, `lib/roles` | `<RequireAuth>`, `<RequireRole permission>`, `useSession()`, `can.*`, `hasManagement(me)`, `managementHome(me)`, `isManagementPath(pathname)` |
 | Colour scheme | `themes/colorMode` | `useColorMode()` → `{ colorMode, toggleColorMode, setColorMode }` |
 
 Buttons, inputs, badges, menus, tooltips: use Chakra's own (`Button`, `IconButton`, `Badge`, `Menu.*`) – the recipes in `themes/system.ts` already give them the Arcade look.
@@ -109,16 +123,18 @@ Theme = `<html data-theme="<ThemeKey>">`, scheme = `.dark` / `.light` on `<html>
 - `NumberInput` values are strings and `Tabs` / `Dialog` keep content mounted unless `lazyMount unmountOnExit` is set: the wrappers handle both.
 - A solid `Button` draws its slab from `colorPalette.depth`. Only `brand`, `accent`, `gray` and the status palettes above define it.
 - `Badge` sizes stop at `lg`.
-- Responsive props are viewport-based, but the sidebar takes 240 px from `md` up: a three-column row that fits "at lg" does not (see the grid areas in `DashboardPage`).
+- Responsive props are viewport-based, but on the management side the sub-navigation takes 236 px plus a gap from `lg` up: a row that fits "at xl" on the employee side is narrower there (see the six tiles of `pages/admin/dashboard/KpiRow`). The employee side has no sidebar.
 - Chakra's styles live in cascade layers (`reset, base, tokens, recipes`); the order is pinned in `index.html`. Unlayered CSS always wins over them.
 - Only registered role tokens tween on theme change (`themes/runtime.ts`); add a token there if a new one should.
-- Canvas / `requestAnimationFrame` effects do not advance in a hidden browser tab, so automated screenshots may show them frozen.
-- `<Panel asChild>` does not turn the panel into its child: `Card.Root` merges into the `Card.Body` that Panel renders. For a clickable card wrap the panel instead: `<Box asChild display="block" borderRadius="l3" focusVisibleRing="outside"><Link to>…<Panel>…</Panel></Link></Box>` (see `HostEventsPage`).
+- Canvas / `requestAnimationFrame` effects do not advance in a hidden browser tab, so automated screenshots may show them frozen. The same goes for Motion's entrance animations: in a background tab a page can sit at `opacity: 0` until the tab is brought to the front.
+- `<Panel asChild>` does not turn the panel into its child: `Card.Root` merges into the `Card.Body` that Panel renders. For an animated card put the `motion.*` element outside (`<motion.article style={{ height: '100%' }}><Panel h="full">…`, see `GiftCatalog`). For a clickable card wrap the panel instead: `<Box asChild display="block" borderRadius="l3" focusVisibleRing="outside"><Link to>…<Panel>…</Panel></Link></Box>` (see `HostEventsPage`).
 - Full-screen surface (projector): `Dialog.Root size="full"` with a `<HeroPanel minH="100dvh" borderRadius="0">` inside `Dialog.Content`; the shared `<Modal>` stays for ordinary dialogs (see `host/CheckInTab`).
 - Per-row mutations fired in quick succession: use `mutateAsync(...).catch(...)` per call. The callbacks passed to `mutate()` only run for the latest call (see `host/ApprovalsTab`).
 - `FileUpload` (FileDropZone) listens for the `input` event on its hidden input, not `change`: a scripted test must dispatch `input`.
 - A form built from the fields here does its own validation and shows translated messages, so switch the browser's bubbles off: `<form noValidate>` (`<Form>` in `pages/admin/parts`). And `Flex as="form"` has `div` prop types (no `noValidate`): use `chakra.form`.
 - `<FormField required>` (a `Field.Root`) makes every control inside it required, so a group of checkboxes blocks the submit until all are ticked. Group checkboxes in `Fieldset.Root` + `Fieldset.Legend` / `Fieldset.ErrorText` (see `admin/ApiClientsPage`).
 - `motion.*` elements reserve `onDragStart` / `onDragEnd` for their own gestures: put native HTML5 drag-and-drop (`draggable`, `onDragStart` …) on a plain element inside the motion element (see `admin/GiftImagesEditor`).
+- `Flex as="ul"` keeps the `div` ref type. For a ref on a list use `<Flex asChild …><ul ref={ref}>…</ul></Flex>` (see the management nav in `AppLayout`).
+- `useEffectEvent` (React 19.2) is the way to read the latest props inside a long-lived effect without restarting it (the scanner's camera loop).
 - A sandboxed `<iframe sandbox="" srcDoc>`: mount it only once there is content. Mounted with an empty `srcDoc` and filled later, it stayed blank in the desktop app's browser pane (see `admin/EmailTemplates`).
 - `<AnimatedNumber format>` receives the in-between values of the tween: round inside your formatter, or leave `format` out for whole numbers.

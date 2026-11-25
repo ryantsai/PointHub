@@ -1,6 +1,6 @@
 import { Center } from '@chakra-ui/react';
 import { Navigate, Outlet, useLocation } from 'react-router';
-import { useMe } from '../api/auth';
+import { SIGNED_OUT_PATH, useMe, wasExplicitSignOut } from '../api/auth';
 import { loginPath } from '../lib/returnUrl';
 import { can, type Permission } from '../lib/roles';
 import { SessionContext, useSession } from '../lib/session';
@@ -20,7 +20,8 @@ export function RequireAuth() {
       </Center>
     );
   }
-  if (!me) return <Navigate to={loginPath(location.pathname + location.search)} replace />;
+  // After an explicit sign-out the login page must know, so it does not try single sign-on again by itself.
+  if (!me) return <Navigate to={wasExplicitSignOut() ? SIGNED_OUT_PATH : loginPath(location.pathname + location.search)} replace />;
 
   return (
     <SessionContext value={me}>

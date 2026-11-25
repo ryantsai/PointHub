@@ -1,47 +1,51 @@
-import { Avatar, Box, Center, CloseButton, Drawer, Flex, IconButton, Menu, Portal, Text } from '@chakra-ui/react';
-import { CalendarDays, ClipboardCheck, Gift, History, House, KeyRound, LogOut, Mail, Menu as MenuIcon, Package, Palette, ReceiptText, Star, Users, type LucideIcon } from 'lucide-react';
+import { Avatar, Box, Card, Center, Flex, IconButton, Menu, Portal, SegmentGroup, Text } from '@chakra-ui/react';
+import { CalendarDays, ClipboardCheck, Gift, History, House, KeyRound, LayoutDashboard, LogOut, Mail, Package, Palette, ReceiptText, Star, Users, type LucideIcon } from 'lucide-react';
 import { motion } from 'motion/react';
-import { Suspense } from 'react';
+import { Suspense, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, matchPath, Outlet, useLocation, useNavigate } from 'react-router';
-import { useLogout, useSiteConfig } from '../api/auth';
+import { SIGNED_OUT_PATH, useLogout, useSiteConfig } from '../api/auth';
 import { useRedemptionCount } from '../api/gifts';
 import type { Me } from '../api/types';
-import { useDisclosure } from '../lib/hooks';
+import { HEADER_HEIGHT, TAB_BAR_HEIGHT } from '../lib/layout';
 import { springs } from '../lib/motion';
-import { can } from '../lib/roles';
+import { can, hasManagement, isManagementPath, managementHome } from '../lib/roles';
 import { useSession } from '../lib/session';
 import { initials } from '../lib/text';
+import { loadAdminDashboard } from '../pages/admin/dashboardLoader';
 import { AnimatedNumber } from './AnimatedNumber';
 import { RoleBadges } from './badges';
 import { ColorSchemeToggle, LanguageSwitcher, ThemePreviewBadge } from './HeaderControls';
 import { LoadingBlock } from './states';
-import { Coin, Eyebrow } from './ui/bits';
-
-const HEADER_HEIGHT = '60px';
-const TAB_BAR_HEIGHT = '58px';
+import { Coin } from './ui/bits';
 
 interface NavItem {
   to: string;
   label: string;
   icon: LucideIcon;
-  /** Match the path exactly (the dashboard at "/") instead of as a prefix. */
+  /** Match the path exactly ("/", "/admin") instead of as a prefix. */
   end?: boolean;
   /** A counter after the label (open claims). Hidden while zero. */
   badge?: { count: number; label: string };
 }
 
-/** Which sections a person sees. Permissions come from lib/roles; the API enforces them again. */
-function useNavSections(me: Me) {
+/** The employee side: two pages, linked from the top bar (desktop) and the tab bar (phones). */
+function useEmployeeNav(): NavItem[] {
   const { t } = useTranslation();
-  const employee: NavItem[] = [
+  return [
     { to: '/', label: t('nav.dashboard'), icon: House, end: true },
     { to: '/gifts', label: t('nav.gifts'), icon: Gift },
   ];
-  const host: NavItem[] = can.host(me) ? [{ to: '/host/events', label: t('nav.hostEvents'), icon: CalendarDays }] : [];
+}
+
+/** The management side: one flat list, filtered by what the person may see. The API enforces it again. */
+function useManagementNav(me: Me): NavItem[] {
+  const { t } = useTranslation();
   // Claims waiting to be handed over; only asked for by people who can see the claims page.
   const openClaims = useRedemptionCount({ status: 'requested' }, can.manageGifts(me)).data ?? 0;
-  const admin: NavItem[] = [
+  return [
+    ...(can.viewAdmin(me) ? [{ to: '/admin', label: t('nav.adminDashboard'), icon: LayoutDashboard, end: true }] : []),
+    ...(can.host(me) ? [{ to: '/host/events', label: t('nav.hostEvents'), icon: CalendarDays }] : []),
     ...(can.viewAdmin(me)
       ? [
           { to: '/admin/ledger', label: t('nav.ledger'), icon: ReceiptText },
@@ -63,106 +67,9 @@ function useNavSections(me: Me) {
       : []),
     ...(can.viewAdmin(me) ? [{ to: '/admin/audit', label: t('nav.audit'), icon: History }] : []),
   ];
-  return { employee, host, admin };
 }
 
 const isActive = (item: NavItem, pathname: string) => matchPath({ path: item.to, end: item.end ?? false }, pathname) !== null;
-
-/** `scope` keeps the sliding highlight of the sidebar and of the drawer apart. */
-function NavItems({ items, onNavigate, scope }: { items: NavItem[]; onNavigate?: () => void; scope: string }) {
-  const { pathname } = useLocation();
-  return items.map((item) => {
-    const active = isActive(item, pathname);
-    return (
-      <Flex
-        key={item.to}
-        asChild
-        position="relative"
-        isolation="isolate"
-        align="center"
-        gap="3"
-        px="3"
-        minH="10"
-        py="2"
-        borderRadius="l2"
-        fontWeight="bold"
-        fontSize="sm"
-        lineHeight="1.3"
-        color={active ? 'brand.contrast' : 'fg.muted'}
-        transition="color 160ms, background-color 160ms"
-        _hover={active ? undefined : { bg: 'bg.muted', color: 'fg' }}
-        focusVisibleRing="outside"
-      >
-        <Link to={item.to} aria-current={active ? 'page' : undefined} onClick={onNavigate}>
-          {active && (
-            <motion.span
-              layoutId={`nav-active-${scope}`}
-              transition={springs.snap}
-              style={{
-                position: 'absolute',
-                inset: 0,
-                zIndex: -1,
-                borderRadius: 'var(--chakra-radii-l2)',
-                background: 'var(--chakra-colors-brand-solid)',
-                boxShadow: '0 3px 0 0 var(--chakra-colors-brand-depth)',
-              }}
-            />
-          )}
-          <item.icon size={18} strokeWidth={2.4} aria-hidden style={{ flexShrink: 0 }} />
-          <Box as="span" flex="1" minW="0">
-            {item.label}
-          </Box>
-          {item.badge && item.badge.count > 0 && (
-            <Center
-              as="span"
-              flexShrink={0}
-              minW="5"
-              h="5"
-              px="1.5"
-              borderRadius="full"
-              bg="accent.solid"
-              color="accent.contrast"
-              fontSize="xs"
-              fontWeight="black"
-              lineHeight="1"
-              fontVariantNumeric="tabular-nums"
-              title={item.badge.label}
-              aria-label={item.badge.label}
-            >
-              {item.badge.count}
-            </Center>
-          )}
-        </Link>
-      </Flex>
-    );
-  });
-}
-
-function NavSections({ me, onNavigate, scope }: { me: Me; onNavigate?: () => void; scope: string }) {
-  const { t } = useTranslation();
-  const sections = useNavSections(me);
-  return (
-    <Flex as="nav" direction="column" gap="1" aria-label={t('nav.toggleMenu')}>
-      <NavItems items={sections.employee} onNavigate={onNavigate} scope={scope} />
-      {sections.host.length > 0 && (
-        <>
-          <Eyebrow mt="5" mb="1" px="3">
-            {t('nav.sectionHost')}
-          </Eyebrow>
-          <NavItems items={sections.host} onNavigate={onNavigate} scope={scope} />
-        </>
-      )}
-      {sections.admin.length > 0 && (
-        <>
-          <Eyebrow mt="5" mb="1" px="3">
-            {t('nav.sectionAdmin')}
-          </Eyebrow>
-          <NavItems items={sections.admin} onNavigate={onNavigate} scope={scope} />
-        </>
-      )}
-    </Flex>
-  );
-}
 
 function BrandMark({ name }: { name: string }) {
   const { t } = useTranslation();
@@ -172,11 +79,79 @@ function BrandMark({ name }: { name: string }) {
         <Center aria-hidden boxSize="9" flexShrink={0} borderRadius="l2" bg="brand.500" color="white" boxShadow="0 3px 0 0 {colors.brand.700}" transform="rotate(-6deg)">
           <Star size={18} fill="currentColor" strokeWidth={0} />
         </Center>
-        {/* Hidden on phones: the header also has to fit the balance and three controls. */}
+        {/* Hidden on phones: the row also has to fit the balance and three controls. */}
         <Text as="span" fontFamily="heading" fontWeight="extrabold" fontSize="lg" letterSpacing="-0.02em" display={{ base: 'none', sm: 'inline' }} truncate>
           {name}
         </Text>
       </Link>
+    </Flex>
+  );
+}
+
+/** Employee side / management side. Only people with a role have two sides. */
+function SideSwitch({ managing, home }: { managing: boolean; home: string }) {
+  const { t } = useTranslation();
+  const navigate = useNavigate();
+  const sides = [
+    { value: 'employee', label: t('nav.sideEmployee') },
+    { value: 'manage', label: t('nav.sideManage') },
+  ];
+  return (
+    <SegmentGroup.Root
+      size="sm"
+      // Phones: a second row of its own, as wide as the bar.
+      order={{ base: 3, md: 0 }}
+      w={{ base: 'full', md: 'auto' }}
+      value={managing ? 'manage' : 'employee'}
+      onValueChange={(details) => {
+        if (details.value === 'manage' && !managing) void navigate(home);
+        if (details.value === 'employee' && managing) void navigate('/');
+      }}
+      aria-label={t('nav.sideSwitch')}
+    >
+      <SegmentGroup.Indicator />
+      {sides.map((side) => (
+        <SegmentGroup.Item key={side.value} value={side.value} flex={{ base: '1', md: 'initial' }} justifyContent="center">
+          <SegmentGroup.ItemText>{side.label}</SegmentGroup.ItemText>
+          <SegmentGroup.ItemHiddenInput />
+        </SegmentGroup.Item>
+      ))}
+    </SegmentGroup.Root>
+  );
+}
+
+/** Home / Gifts in the top bar, from tablet width up. Phones get the tab bar instead. */
+function EmployeeLinks({ items }: { items: NavItem[] }) {
+  const { t } = useTranslation();
+  const { pathname } = useLocation();
+  return (
+    <Flex as="nav" aria-label={t('nav.sideEmployee')} display={{ base: 'none', md: 'flex' }} align="center" gap="1">
+      {items.map((item) => {
+        const active = isActive(item, pathname);
+        return (
+          <Flex
+            key={item.to}
+            asChild
+            align="center"
+            gap="2"
+            h="9"
+            px="3"
+            borderRadius="l2"
+            fontWeight="bold"
+            fontSize="sm"
+            color={active ? 'brand.fg' : 'fg.muted'}
+            bg={active ? 'brand.subtle' : undefined}
+            transition="color 160ms, background-color 160ms"
+            _hover={active ? undefined : { bg: 'bg.muted', color: 'fg' }}
+            focusVisibleRing="outside"
+          >
+            <Link to={item.to} aria-current={active ? 'page' : undefined}>
+              <item.icon size={17} strokeWidth={2.4} aria-hidden />
+              {item.label}
+            </Link>
+          </Flex>
+        );
+      })}
     </Flex>
   );
 }
@@ -241,7 +216,7 @@ function UserMenu({ me }: { me: Me }) {
               value="sign-out"
               fontWeight="semibold"
               borderRadius="l1"
-              onSelect={() => logout.mutate(undefined, { onSuccess: () => void navigate('/login', { replace: true }) })}
+              onSelect={() => logout.mutate(undefined, { onSuccess: () => void navigate(SIGNED_OUT_PATH, { replace: true }) })}
             >
               <LogOut size={16} aria-hidden />
               {t('nav.signOut')}
@@ -253,12 +228,122 @@ function UserMenu({ me }: { me: Me }) {
   );
 }
 
+/**
+ * Sub-navigation of the management side: a card beside the content on desktop, a strip that scrolls sideways
+ * above it on narrower screens. The highlight slides between entries.
+ */
+function ManagementNav({ items }: { items: NavItem[] }) {
+  const { t } = useTranslation();
+  const { pathname } = useLocation();
+  const listRef = useRef<HTMLUListElement>(null);
+
+  // On the strip, keep the current entry in view (it may be the tenth of ten).
+  useEffect(() => {
+    const list = listRef.current;
+    const current = list?.querySelector<HTMLElement>('[aria-current="page"]')?.closest('li');
+    if (!list || !current || list.scrollWidth <= list.clientWidth) return;
+    list.scrollTo({ left: current.offsetLeft - (list.clientWidth - current.offsetWidth) / 2 });
+  }, [pathname]);
+
+  return (
+    <Box as="nav" aria-label={t('nav.sideManage')} flexShrink={0} w={{ base: 'full', lg: '236px' }} position={{ base: 'static', lg: 'sticky' }} top={{ lg: `calc(${HEADER_HEIGHT} + 24px)` }}>
+      <Card.Root variant="outline">
+        <Flex
+          asChild
+          listStyleType="none"
+          direction={{ base: 'row', lg: 'column' }}
+          gap="1.5"
+          p="2.5"
+          overflowX={{ base: 'auto', lg: 'visible' }}
+          overflowY={{ lg: 'auto' }}
+          maxH={{ lg: `calc(100dvh - ${HEADER_HEIGHT} - 48px)` }}
+          // positioned: the scroll maths above reads offsetLeft against it
+          position="relative"
+          css={{ scrollbarWidth: 'none', '&::-webkit-scrollbar': { display: 'none' } }}
+        >
+          <ul ref={listRef}>
+            {items.map((item) => {
+              const active = isActive(item, pathname);
+              return (
+                <Box as="li" key={item.to} flexShrink={0}>
+                  <Flex
+                    asChild
+                    position="relative"
+                    isolation="isolate"
+                    align="center"
+                    gap="2.5"
+                    px="3"
+                    minH="10"
+                    py="2"
+                    borderRadius="l2"
+                    fontWeight="bold"
+                    fontSize="sm"
+                    lineHeight="1.3"
+                    whiteSpace={{ base: 'nowrap', lg: 'normal' }}
+                    color={active ? 'brand.contrast' : 'fg.muted'}
+                    transition="color 160ms, background-color 160ms"
+                    _hover={active ? undefined : { bg: 'bg.muted', color: 'fg' }}
+                    focusVisibleRing="outside"
+                  >
+                    <Link to={item.to} aria-current={active ? 'page' : undefined}>
+                      {active && (
+                        <motion.span
+                          layoutId="nav-active-manage"
+                          transition={springs.snap}
+                          style={{
+                            position: 'absolute',
+                            inset: 0,
+                            zIndex: -1,
+                            borderRadius: 'var(--chakra-radii-l2)',
+                            background: 'var(--chakra-colors-brand-solid)',
+                            boxShadow: '0 3px 0 0 var(--chakra-colors-brand-depth)',
+                          }}
+                        />
+                      )}
+                      <item.icon size={18} strokeWidth={2.4} aria-hidden style={{ flexShrink: 0 }} />
+                      <Box as="span" flex={{ lg: '1' }} minW="0">
+                        {item.label}
+                      </Box>
+                      {item.badge && item.badge.count > 0 && (
+                        <Center
+                          as="span"
+                          flexShrink={0}
+                          minW="5"
+                          h="5"
+                          px="1.5"
+                          borderRadius="full"
+                          bg="accent.solid"
+                          color="accent.contrast"
+                          fontSize="xs"
+                          fontWeight="black"
+                          lineHeight="1"
+                          fontVariantNumeric="tabular-nums"
+                          title={item.badge.label}
+                          aria-label={item.badge.label}
+                        >
+                          {item.badge.count}
+                        </Center>
+                      )}
+                    </Link>
+                  </Flex>
+                </Box>
+              );
+            })}
+          </ul>
+        </Flex>
+      </Card.Root>
+    </Box>
+  );
+}
+
 /** Tab bar for phones: the employee pages, one thumb away. */
 function BottomTabs({ items }: { items: NavItem[] }) {
+  const { t } = useTranslation();
   const { pathname } = useLocation();
   return (
     <Flex
       as="nav"
+      aria-label={t('nav.sideEmployee')}
       display={{ base: 'flex', md: 'none' }}
       position="fixed"
       insetX="0"
@@ -299,101 +384,77 @@ function BottomTabs({ items }: { items: NavItem[] }) {
   );
 }
 
-/** Signed-in frame: sticky header, sidebar (a drawer on phones) and a bottom tab bar on phones for the employee pages. */
+/**
+ * Signed-in frame. One top bar for everyone: brand, the employee / management switch (people with a role only),
+ * balance, language, colour scheme, account. The employee side has no sidebar; the management side keeps a
+ * sub-navigation beside its content.
+ */
 export function AppLayout() {
   const me = useSession();
   const { t } = useTranslation();
+  const { pathname } = useLocation();
   const { data: config } = useSiteConfig();
-  const [navOpened, nav] = useDisclosure(false);
-  const sections = useNavSections(me);
+  const employeeNav = useEmployeeNav();
+  const managementNav = useManagementNav(me);
   const appName = config?.appName ?? t('app.name');
+  const home = managementHome(me);
+  const twoSided = hasManagement(me) && home !== null;
+  const managing = twoSided && isManagementPath(pathname);
+  const seesDashboard = can.viewAdmin(me);
+
+  // The dashboard chunk carries the chart library. Warm it up for the people who will open it, so the
+  // switch to the management side is instant; employees never download it.
+  useEffect(() => {
+    if (!seesDashboard) return;
+    const id = window.setTimeout(() => void loadAdminDashboard(), 1500);
+    return () => window.clearTimeout(id);
+  }, [seesDashboard]);
 
   return (
     <Box minH="100dvh">
-      <Flex
-        as="header"
-        position="sticky"
-        top="0"
-        zIndex="sticky"
-        h={HEADER_HEIGHT}
-        px={{ base: '3', md: '5' }}
-        align="center"
-        justify="space-between"
-        gap="2"
-        bg="bg.panel"
-        borderBottomWidth="2px"
-        borderColor="border"
-      >
-        <Flex align="center" gap="2" minW="0">
-          <IconButton display={{ base: 'inline-flex', md: 'none' }} variant="ghost" colorPalette="gray" size="sm" aria-label={t('nav.toggleMenu')} aria-expanded={navOpened} onClick={nav.open}>
-            <MenuIcon aria-hidden />
-          </IconButton>
+      {/* Two rows on a phone for people with a role (the switch wraps), so it does not stick there. */}
+      <Box as="header" position={{ base: twoSided ? 'static' : 'sticky', md: 'sticky' }} top="0" zIndex="sticky" bg="bg.panel" borderBottomWidth="2px" borderColor="border">
+        <Flex maxW="1440px" mx="auto" minH={HEADER_HEIGHT} px={{ base: '3', md: '6' }} py="2" align="center" columnGap={{ base: '2', md: '4' }} rowGap="2" wrap="wrap">
           <BrandMark name={appName} />
+          {twoSided && home && <SideSwitch managing={managing} home={home} />}
+          {!managing && <EmployeeLinks items={employeeNav} />}
+          <Flex align="center" gap={{ base: '1', sm: '2' }} flexShrink={0} ml="auto">
+            <ThemePreviewBadge />
+            <BalanceChip balance={me.balance} />
+            <LanguageSwitcher />
+            <ColorSchemeToggle />
+            <UserMenu me={me} />
+          </Flex>
         </Flex>
-        <Flex align="center" gap={{ base: '1', sm: '2' }} flexShrink={0}>
-          <ThemePreviewBadge />
-          <BalanceChip balance={me.balance} />
-          <LanguageSwitcher />
-          <ColorSchemeToggle />
-          <UserMenu me={me} />
-        </Flex>
-      </Flex>
+      </Box>
 
-      <Flex align="flex-start">
-        <Box
-          display={{ base: 'none', md: 'block' }}
-          position="sticky"
-          top={HEADER_HEIGHT}
-          w="240px"
-          flexShrink={0}
-          h={`calc(100dvh - ${HEADER_HEIGHT})`}
-          overflowY="auto"
-          p="3"
-          bg="bg.panel"
-          borderRightWidth="2px"
-          borderColor="border"
-        >
-          <NavSections me={me} scope="side" />
-        </Box>
-
-        <Box
-          as="main"
-          flex="1"
-          minW="0"
-          px={{ base: '4', md: '6' }}
-          pt={{ base: '4', md: '6' }}
-          pb={{ base: `calc(${TAB_BAR_HEIGHT} + env(safe-area-inset-bottom) + 32px)`, md: '16' }}
-        >
-          <Box maxW="1240px" mx="auto">
+      {managing ? (
+        <Flex maxW="1440px" mx="auto" px={{ base: '4', md: '6' }} pt={{ base: '4', md: '6' }} pb="16" gap={{ base: '5', lg: '6' }} direction={{ base: 'column', lg: 'row' }} align={{ base: 'stretch', lg: 'flex-start' }}>
+          <ManagementNav items={managementNav} />
+          <Box as="main" flex="1" minW="0">
             <Suspense fallback={<LoadingBlock />}>
               <Outlet />
             </Suspense>
           </Box>
-        </Box>
-      </Flex>
-
-      <BottomTabs items={sections.employee} />
-
-      <Drawer.Root open={navOpened} onOpenChange={(details) => (details.open ? nav.open() : nav.close())} placement="start" size="xs">
-        <Portal>
-          <Drawer.Backdrop />
-          <Drawer.Positioner>
-            <Drawer.Content bg="bg.panel" borderRightWidth="2px" borderColor="border">
-              <Drawer.Header>
-                <Drawer.Title fontFamily="heading" fontWeight="extrabold">
-                  {appName}
-                </Drawer.Title>
-              </Drawer.Header>
-              <Drawer.Body px="3">
-                <NavSections me={me} onNavigate={nav.close} scope="drawer" />
-              </Drawer.Body>
-              <Drawer.CloseTrigger asChild>
-                <CloseButton size="sm" aria-label={t('app.close')} />
-              </Drawer.CloseTrigger>
-            </Drawer.Content>
-          </Drawer.Positioner>
-        </Portal>
-      </Drawer.Root>
+        </Flex>
+      ) : (
+        <>
+          <Box
+            as="main"
+            maxW="1240px"
+            mx="auto"
+            px={{ base: '4', md: '6' }}
+            pt={{ base: '4', md: '6' }}
+            // room for the tab bar (phones) and for the home page's floating balance pill
+            pb={{ base: `calc(${TAB_BAR_HEIGHT} + env(safe-area-inset-bottom) + 76px)`, md: '24' }}
+          >
+            <Suspense fallback={<LoadingBlock />}>
+              <Outlet />
+            </Suspense>
+          </Box>
+          <BottomTabs items={employeeNav} />
+        </>
+      )}
     </Box>
   );
 }

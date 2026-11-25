@@ -83,12 +83,12 @@ public record EmployeeRecordDto(string EmployeeNo, string DisplayName, string Em
 public record CheckInPreviewDto(EventSummaryDto Event, bool CanCheckIn, string? BlockedCode);
 
 public record CheckInDto(
-    int Id, int EventId, int EmployeeId, string EmployeeNo, string EmployeeName, string? Department,
+    int Id, int EventId, LocalizedText EventTitle, int EmployeeId, string EmployeeNo, string EmployeeName, string? Department,
     CheckInMethod Method, CheckInStatus Status, bool OnRoster, int Points,
     DateTimeOffset CheckedInAt, DateTimeOffset? DecidedAt, string? DecidedByName, string? Note)
 {
     public static readonly Expression<Func<EventCheckIn, CheckInDto>> Projection = c => new CheckInDto(
-        c.Id, c.EventId, c.EmployeeId, c.Employee.EmployeeNo, c.Employee.DisplayName, c.Employee.Department,
+        c.Id, c.EventId, c.Event.Title, c.EmployeeId, c.Employee.EmployeeNo, c.Employee.DisplayName, c.Employee.Department,
         c.Method, c.Status, c.OnRoster, c.Event.Points, c.CheckedInAt, c.DecidedAt, c.DecidedBy!.DisplayName, c.Note);
 }
 
@@ -213,6 +213,13 @@ public record EmailTemplateDto(string Key, string Locale, string Subject, string
 public record EmailSettingsDto(SmtpStatusDto Smtp, EmailQueueDto Queue, IReadOnlyList<EmailTemplateDto> Templates);
 public record EmailPreviewDto(string Subject, string Text, string Html);
 public record EmailTestResultDto(bool Ok, string? Error);
+
+public record AdminStatsWeekDto(DateOnly WeekStart, int Issued, int Redeemed);
+
+public record AdminStatsDto(
+    int PointsIssuedThisMonth, int PointsIssuedLastMonth, int PointsRedeemedThisMonth, int PointsRedeemedLastMonth,
+    int ActiveParticipants, int TotalEmployees, long OutstandingPoints, int PendingCheckIns, int OpenClaims,
+    IReadOnlyList<AdminStatsWeekDto> Weeks);
 
 public record EmailLogEntryDto(long Id, string To, string Subject, string? TemplateKey, EmailStatus Status, int Attempts, string? LastError, DateTimeOffset CreatedAt, DateTimeOffset? SentAt)
 {

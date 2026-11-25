@@ -12,9 +12,11 @@ export const keys = {
   hostEvent: (id: number) => ['host', 'event', id] as const,
   checkInCode: (id: number) => ['host', 'event', id, 'checkin-code'] as const,
   roster: (id: number) => ['host', 'event', id, 'roster'] as const,
+  pendingCheckIns: ['host', 'checkins', 'pending'] as const,
   eventCheckIns: (id: number, status: string | null) => ['host', 'event', id, 'checkins', status ?? 'all'] as const,
   gifts: ['gifts'] as const,
   adminGifts: ['admin', 'gifts'] as const,
+  adminStats: ['admin', 'stats'] as const,
   adminRedemptions: (query?: QueryParams) => (query ? ['admin', 'redemptions', query] : ['admin', 'redemptions']),
   transactions: (query?: QueryParams) => (query ? ['admin', 'transactions', query] : ['admin', 'transactions']),
   employees: (query?: QueryParams) => (query ? ['admin', 'employees', query] : ['admin', 'employees']),
@@ -26,10 +28,11 @@ export const keys = {
   emailPreview: (input: QueryParams) => ['admin', 'email-preview', input] as const,
 };
 
-/** Every query that shows a balance or ledger rows; invalidate these after any point movement. */
+/** Every query that shows a balance, ledger rows or point totals; invalidate these after any point movement. */
 export const pointKeys: readonly (readonly string[])[] = [
   keys.me,
   ['me'],
   ['admin', 'transactions'],
   ['admin', 'employees'],
+  keys.adminStats,
 ];
