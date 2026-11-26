@@ -10,6 +10,7 @@ import type { EventDetail, RotatingCode } from '../../api/types';
 import { AnimatedNumber } from '../../components/AnimatedNumber';
 import { ErrorBlock } from '../../components/states';
 import { Coin } from '../../components/ui/bits';
+import { basePath } from '../../lib/basePath';
 import { HeroPanel } from '../../components/ui/HeroPanel';
 import { Notice } from '../../components/ui/Notice';
 import { Panel } from '../../components/ui/Panel';
@@ -29,7 +30,7 @@ const PROJECTOR_QR = { base: 'min(46dvh, 76vw)', lg: 'min(68dvh, 42vw)' };
  */
 function useCheckInUrl(token: string, code: string | null): string {
   const { data: config } = useSiteConfig();
-  const base = (config?.publicBaseUrl ?? window.location.origin).replace(/\/+$/, '');
+  const base = (config?.publicBaseUrl ?? window.location.origin + basePath).replace(/\/+$/, '');
   const url = `${base}/c/${token}`;
   return code === null ? url : `${url}?k=${encodeURIComponent(code)}`;
 }

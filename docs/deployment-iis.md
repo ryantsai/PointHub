@@ -35,6 +35,18 @@ Create a database and a login for the app with `db_datareader`, `db_datawriter` 
 2. Create the site on the publish folder with an HTTPS binding.
 3. Give the pool identity read access to the site folder, and modify access to the uploads folder (`Uploads__AssetsPath`) and the key folder below. Include the uploads folder in the backup: the database only holds the picture ids.
 
+### In an application folder of an existing site
+
+PointHub can also run below an existing website, for example `https://www.example.com/PointHub/`:
+
+1. In the existing site, **Add Application…**: alias `PointHub`, physical path = the publish folder, the PointHub application pool from step 1 (not the parent site's pool, and with *No Managed Code*).
+2. Nothing in the build changes. IIS passes the folder to the app as its path base; the app writes it into the page's `<base href>`, and the web client takes its API, picture and page addresses from there.
+3. Include the folder wherever an address is configured: `Site__PublicBaseUrl` = `https://www.example.com/PointHub` (QR codes, links in emails) and the Entra ID redirect URI `https://www.example.com/PointHub/api/auth/callback`.
+4. The parent site's `web.config` is inherited by the application. If it adds handlers, rewrite rules or modules that get in the way, clear them in PointHub's own `web.config` (for example `<rewrite><rules><clear /></rules></rewrite>`), or wrap the parent's settings in `<location path="." inheritInChildApplications="false">`.
+5. The folder name is case-insensitive in IIS but cookie paths are not: link to the site with the same casing everywhere (`/PointHub/`), or people who arrive through a differently cased link have to sign in again.
+
+Behind a reverse proxy other than IIS, or with Kestrel alone, set `Site__PathBase` = `/PointHub` instead. Under IIS leave it empty.
+
 ## Configuration
 
 Set these as environment variables on the application pool (IIS Manager → Configuration Editor → `system.webServer/aspNetCore` → `environmentVariables`) or in a server-only `appsettings.Production.json` that is not in source control. Do not put secrets in the repository.
@@ -45,7 +57,8 @@ Set these as environment variables on the application pool (IIS Manager → Conf
 | `ConnectionStrings__PointHub` | `Server=…;Database=PointHub;Trusted_Connection=True;Encrypt=True` |
 | `Auth__Mode` | `EntraId` or `Windows` – see "Sign-in" below |
 | `Auth__BootstrapAdminEmails__0` | the first system admin's email address (as it is in Entra ID or in the AD `mail` attribute) |
-| `Site__PublicBaseUrl` | `https://pointhub.<your-domain>` – used in QR codes |
+| `Site__PublicBaseUrl` | `https://pointhub.<your-domain>`, or `https://www.<your-domain>/PointHub` in an application folder – used in QR codes and emails |
+| `Site__PathBase` | Only when not hosted by IIS and served below a folder: `/PointHub`. Leave empty under IIS |
 | `Site__TimeZone` | `Asia/Taipei` |
 | `Uploads__AssetsPath` | Folder for gift pictures. Default `uploads/assets` under the site folder; point it at a folder **outside** the deployment folder (for example `D:\PointHubData\assets`) so a redeploy cannot wipe it |
 | `Smtp__Host`, `Smtp__Port`, `Smtp__Security` | Company SMTP relay; security is `None`, `StartTls` or `Ssl` |
@@ -76,7 +89,7 @@ One switch, `Auth:Mode`, chooses how people are identified. Whichever is used, P
 
 App registration:
 
-- Platform: **Web**. Redirect URI: `https://pointhub.<your-domain>/api/auth/callback`.
+- Platform: **Web**. Redirect URI: `https://pointhub.<your-domain>/api/auth/callback` (in an application folder: `https://www.<your-domain>/PointHub/api/auth/callback`).
 - A client secret (or certificate).
 - Token configuration → optional claims on the ID token: `email`; add the employee number claim if the directory has one.
 - Assign the users or groups who may use PointHub if the tenant requires assignment.
@@ -114,7 +127,7 @@ If TLS ends in front of IIS, add forwarded-headers handling so the app sees the 
 
 ## After deployment
 
-- `GET /api/health` returns `{"status":"ok"}`.
+- `GET /api/health` (or `/PointHub/api/health` in an application folder) returns `{"status":"ok"}`.
 - Sign in as a bootstrap admin, create an API key for the HR system with the `employees:write` scope, and run the first employee push.
 - Under **Email**, check that SMTP shows as configured and send a test message. Mail that cannot be delivered is retried and then listed as failed there.
 - Upload a gift picture to confirm the pool identity can write to the uploads folder.

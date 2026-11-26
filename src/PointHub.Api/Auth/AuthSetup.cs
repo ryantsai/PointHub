@@ -108,6 +108,7 @@ public static class AuthSetup
         var auth = services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme).AddCookie(cookie =>
         {
             cookie.Cookie.Name = "pointhub.auth";
+            cookie.CookieManager = new FirstCookieManager(); // in a folder, a same-named cookie from "/" must not win
             cookie.Cookie.HttpOnly = true;
             cookie.Cookie.SameSite = SameSiteMode.Lax; // Lax, not Strict: the OIDC redirect back must carry the cookie
             cookie.Cookie.SecurePolicy = environment.IsDevelopment() ? CookieSecurePolicy.SameAsRequest : CookieSecurePolicy.Always;
@@ -140,7 +141,7 @@ public static class AuthSetup
                 oidc.Events.OnRemoteFailure = context =>
                 {
                     var reason = context.Failure?.Message == SignInService.NoAccountMessage ? SignInService.NoAccountError : SignInService.FailedError;
-                    context.Response.Redirect($"/login?error={reason}");
+                    context.Response.Redirect($"{context.Request.PathBase}/login?error={reason}");
                     context.HandleResponse();
                     return Task.CompletedTask;
                 };

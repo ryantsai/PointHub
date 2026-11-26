@@ -22,6 +22,15 @@ builder.Services.ConfigureHttpJsonOptions(options =>
 
 var app = builder.Build();
 
+// Running in a sub-folder (https://host/PointHub): IIS sets the path base of an application folder by itself.
+// Site:PathBase does the same behind another reverse proxy, or with Kestrel alone.
+var pathBase = app.Configuration["Site:PathBase"]?.TrimEnd('/');
+if (!string.IsNullOrEmpty(pathBase))
+{
+    app.UsePathBase(pathBase.StartsWith('/') ? pathBase : "/" + pathBase);
+    app.UseRouting(); // explicitly after UsePathBase, so endpoints are matched on the path below the folder
+}
+
 await PrepareDatabaseAsync(app);
 
 app.UseExceptionHandler();
@@ -32,8 +41,7 @@ if (!app.Environment.IsDevelopment())
     app.UseHttpsRedirection();
 }
 
-app.UseDefaultFiles(); // "/" → index.html (the route fallback below only covers paths below the root)
-app.UseStaticFiles();  // the built React app (web/dist is published into wwwroot)
+app.UseStaticFiles(); // the built React app (web/dist is published into wwwroot); index.html itself: MapSpaShell
 app.UseUploadedAssets(); // gift pictures from the uploads/assets folder
 app.UseCsrfHeaderCheck(IntegrationEndpoints.PathPrefix);
 app.UseAuthentication();
@@ -50,11 +58,7 @@ api.MapHostEndpoints();
 api.MapAdminEndpoints();
 api.MapIntegrationEndpoints();
 
-// Client-side routes (/c/{token}, /admin/ledger, ...) are served the SPA shell. `nonfile` keeps the fallback
-// away from anything that looks like a file: a matched endpoint makes the static-file middleware stand down,
-// so without it scripts, styles and uploaded pictures would all be answered with index.html. Unknown /api
-// paths stay 404.
-app.MapFallbackToFile("{*path:nonfile:regex(^(?!api/).*$)}", "index.html");
+app.MapSpaShell(); // index.html for "/" and every client-side route, with <base href> = the path base
 
 app.Run();
 

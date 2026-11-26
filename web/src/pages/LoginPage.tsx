@@ -15,6 +15,7 @@ import { Panel } from '../components/ui/Panel';
 import { ThemeSprite } from '../components/ui/ThemeSprite';
 import { useErrorMessage } from '../i18n/hooks';
 import { itemVariants, listVariants } from '../lib/motion';
+import { basePath } from '../lib/basePath';
 import { safeReturnUrl } from '../lib/returnUrl';
 import { initials } from '../lib/text';
 import { claimWindowsSignInAttempt, windowsSignInAlreadyTried } from '../lib/windowsSignIn';
@@ -123,7 +124,7 @@ export function LoginPage() {
   const signedOut = params.get('signedOut') === '1';
   const error = params.get('error');
   const authMode = config.data?.authMode;
-  const ssoHref = `/api/auth/login?returnUrl=${encodeURIComponent(returnUrl)}`;
+  const ssoHref = `${basePath}/api/auth/login?returnUrl=${encodeURIComponent(returnUrl)}`;
 
   // Windows mode: people on a domain PC should never see this page, so try once by ourselves. Not after an
   // explicit sign-out, not after an error, and never twice in one tab, so a failure cannot loop.

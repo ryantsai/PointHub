@@ -1,3 +1,4 @@
+import { appUrl } from '../lib/basePath';
 import type { Problem } from './types';
 
 export class ApiError extends Error {
@@ -16,7 +17,9 @@ export class ApiError extends Error {
 
 export type QueryParams = Record<string, string | number | boolean | null | undefined>;
 
+/** `path` is site-relative (`/api/...`); the result carries the app's folder when it runs in one. */
 function buildUrl(path: string, query?: QueryParams): string {
+  path = appUrl(path);
   if (!query) return path;
   const params = new URLSearchParams();
   for (const [key, value] of Object.entries(query)) {
@@ -133,7 +136,7 @@ export async function downloadFile(path: string, query?: QueryParams, fallbackNa
 export function uploadWithProgress<T>(path: string, form: FormData, onProgress?: (fraction: number) => void): Promise<T> {
   return new Promise<T>((resolve, reject) => {
     const xhr = new XMLHttpRequest();
-    xhr.open('POST', path);
+    xhr.open('POST', appUrl(path));
     xhr.setRequestHeader('Accept', 'application/json');
     xhr.setRequestHeader('X-Requested-With', 'PointHub');
     xhr.upload.onprogress = (event) => {

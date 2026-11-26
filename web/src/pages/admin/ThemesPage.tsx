@@ -65,7 +65,8 @@ function Swatches({ theme }: { theme: ThemeDefinition }) {
 function PreviewButton({ theme, dirty }: { theme: ThemeDefinition; dirty: boolean }) {
   const { t } = useTranslation();
   const name = t(`themes.${theme.id}`);
-  const href = `?theme=${theme.key}`;
+  // The current path, not a bare `?theme=`: a relative link would resolve against <base href> (the app root).
+  const href = `${window.location.pathname}?theme=${theme.key}`;
   const current = previewThemeKey === theme.key;
   return (
     <Button asChild size="xs" variant={current ? 'subtle' : 'ghost'} aria-label={`${t('admin.themes.preview')}: ${name}`} title={t('admin.themes.previewHint')}>

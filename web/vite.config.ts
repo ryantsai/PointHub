@@ -16,6 +16,9 @@ export default defineConfig({
       '/uploads': { target: apiTarget },
     },
   },
+  // Relative asset URLs, resolved against the page's <base href> (see index.html): the same build works at the
+  // site root and in a sub-folder such as https://intranet.example.com/PointHub/.
+  base: './',
   build: {
     outDir: 'dist',
   },

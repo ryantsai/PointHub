@@ -7,6 +7,7 @@ import { GIFT_IMAGE_LIMITS, useDeleteGiftImage, useReorderGiftImages, useUploadG
 import type { Gift, GiftImage } from '../../api/types';
 import { FileDropZone } from '../../components/ui/FileDropZone';
 import { useErrorMessage, useFormat } from '../../i18n/hooks';
+import { appUrl } from '../../lib/basePath';
 import { openConfirm } from '../../lib/confirm';
 import { springs } from '../../lib/motion';
 import { notifyError, notifySuccess } from '../../lib/notify';
@@ -125,7 +126,7 @@ export function GiftImagesEditor({ gift }: { gift: Gift }) {
       children: (
         <Flex align="center" gap="3">
           <Box boxSize="16" flexShrink={0} borderRadius="l2" borderWidth="2px" borderColor="border" bg="bg.subtle" overflow="hidden">
-            <img src={image.url} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+            <img src={appUrl(image.url)} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
           </Box>
           <Text fontSize="sm">{index === 0 && images.length > 1 ? t('admin.gifts.images.deleteCoverBody') : t('admin.gifts.images.deleteBody')}</Text>
         </Flex>
@@ -198,7 +199,7 @@ export function GiftImagesEditor({ gift }: { gift: Gift }) {
                   >
                     {/* Neutral frame: the server already fitted the picture into a square, so `contain` shows all of it. */}
                     <Box position="relative" aspectRatio="1" bg="bg.subtle">
-                      <img src={image.url} alt={t('gifts.imageOf', { index: position, count: images.length })} draggable={false} loading="lazy" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain' }} />
+                      <img src={appUrl(image.url)} alt={t('gifts.imageOf', { index: position, count: images.length })} draggable={false} loading="lazy" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain' }} />
                       {index === 0 && (
                         <Badge position="absolute" top="1.5" left="1.5" colorPalette="brand" variant="solid" size="sm" gap="1" boxShadow="0 2px 0 0 {colors.brand.depth}">
                           <Star size={11} fill="currentColor" strokeWidth={0} aria-hidden />

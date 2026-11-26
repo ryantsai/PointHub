@@ -6,6 +6,7 @@ import { MotionConfig } from 'motion/react';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router';
+import { basePath } from './lib/basePath';
 import { queryClient } from './api/queryClient';
 import { App } from './App';
 import { ErrorBoundary } from './components/ErrorBoundary';
@@ -25,7 +26,7 @@ createRoot(document.getElementById('root')!).render(
         {/* reducedMotion="user": people who ask the OS for less motion get fades instead of movement. */}
         <MotionConfig reducedMotion="user">
           <ErrorBoundary>
-            <BrowserRouter>
+            <BrowserRouter basename={basePath || '/'}>
               <LocaleSync>
                 <App />
               </LocaleSync>

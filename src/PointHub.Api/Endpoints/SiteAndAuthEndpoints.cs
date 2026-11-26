@@ -36,7 +36,8 @@ public static class SiteAndAuthEndpoints
         // Single sign-on entry point. The browser navigates here (not fetch); it always ends in a redirect.
         auth.MapGet("/login", async (string? returnUrl, AuthOptions options, HttpContext http, CancellationToken ct) =>
         {
-            var destination = LocalUrlOrRoot(returnUrl);
+            // returnUrl is an app path ("/c/abc"); redirects go below the app's folder when it runs in one.
+            var destination = http.Request.PathBase + LocalUrlOrRoot(returnUrl);
             switch (options.Mode)
             {
                 case AuthMode.EntraId:
@@ -52,7 +53,7 @@ public static class SiteAndAuthEndpoints
                     var account = http.RequestServices.GetRequiredService<WindowsAccountResolver>().Resolve(windows.Principal);
                     var principal = account is null ? null
                         : await http.RequestServices.GetRequiredService<SignInService>().ResolveAsync(account.Email, account.EmployeeNo, account.DisplayName, ct);
-                    if (principal is null) return Results.LocalRedirect($"/login?error={SignInService.NoAccountError}");
+                    if (principal is null) return Results.LocalRedirect($"{http.Request.PathBase}/login?error={SignInService.NoAccountError}");
 
                     await http.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal);
                     return Results.LocalRedirect(destination);

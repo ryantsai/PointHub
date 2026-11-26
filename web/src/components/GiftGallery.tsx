@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from 'motion/react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { GiftImage } from '../api/types';
+import { appUrl } from '../lib/basePath';
 import { PixelSprite } from '../themes/sprites/PixelSprite';
 import { giftBox } from '../themes/sprites/ui';
 
@@ -63,7 +64,7 @@ export function GiftGallery({ images, alt, dimmed }: GiftGalleryProps) {
         <AnimatePresence initial={false} custom={direction} mode="popLayout">
           <motion.img
             key={current.id}
-            src={current.url}
+            src={appUrl(current.url)}
             alt={images.length > 1 ? `${alt} – ${t('gifts.imageOf', { index: index + 1, count: images.length })}` : alt}
             width={current.width}
             height={current.height}
@@ -114,7 +115,7 @@ export function GiftGallery({ images, alt, dimmed }: GiftGalleryProps) {
               aria-current={i === index ? 'true' : undefined}
               onClick={() => go(i)}
             >
-              <img src={image.url} alt="" loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+              <img src={appUrl(image.url)} alt="" loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
             </chakra.button>
           ))}
         </Flex>
@@ -136,7 +137,7 @@ export function GiftThumb({ images, size = 44, shape = 'round' }: { images: Gift
   return (
     <Center aria-hidden flexShrink={0} w={`${size}px`} h={`${size}px`} overflow="hidden" {...look}>
       {first ? (
-        <img src={first.url} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+        <img src={appUrl(first.url)} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
       ) : (
         <PixelSprite sprite={giftBox} scale={Math.max(1, Math.floor((size * 0.75) / giftBox.w))} />
       )}

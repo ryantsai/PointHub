@@ -5,6 +5,7 @@ import { useEffect, useEffectEvent, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router';
 import { useSiteConfig } from '../api/auth';
+import { basePath } from '../lib/basePath';
 import { parseCheckInLink } from '../lib/checkInLink';
 import { Modal } from './ui/Modal';
 import { Notice } from './ui/Notice';
@@ -97,7 +98,7 @@ function Viewfinder({ onRead, onRetry }: { onRead: (path: string) => void; onRet
 
   /** True when the code was a check-in link of this site and the scan is over. Anything else is ignored. */
   const handle = useEffectEvent((raw: string): boolean => {
-    const path = parseCheckInLink(raw, config?.publicBaseUrl, window.location.origin);
+    const path = parseCheckInLink(raw, config?.publicBaseUrl, window.location.origin + basePath);
     if (path === null) {
       setForeign(true);
       return false;

@@ -44,7 +44,10 @@ public sealed class SiteOptions
 
     public string AppName { get; set; } = "PointHub";
 
-    /// <summary>Origin employees reach the site on, used in QR codes. Leave empty to use the browser's origin.</summary>
+    /// <summary>
+    /// Address employees reach the site on, including the application folder if there is one
+    /// (<c>https://intranet.example.com/PointHub</c>); used in QR codes and emails. Leave empty to use the browser's address.
+    /// </summary>
     public string? PublicBaseUrl { get; set; }
     public string DefaultLocale { get; set; } = "en";
 

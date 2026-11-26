@@ -2,9 +2,12 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <!-- The app's folder on the server. "/" in development; the API rewrites it to its path base (e.g. "/PointHub/")
+         when it serves this page, so one build runs at the site root or in an IIS application folder. -->
+    <base href="/" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#199ecf" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
     <title>PointHub</title>
     <!--
       Cascade layer order, fixed before any stylesheet loads. Chakra emits `reset, base, tokens, recipes`.
