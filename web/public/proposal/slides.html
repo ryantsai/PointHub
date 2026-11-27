@@ -1,0 +1,536 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>PointHub 簡報</title>
+  <meta name="color-scheme" content="light">
+  <link rel="stylesheet" href="slides.css">
+</head>
+<body>
+  <!-- Icons, drawn once and reused with <use>. -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/></symbol>
+      <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6.5 6.5-6.5s6.5 2.9 6.5 6.5M16 4.5a3.5 3.5 0 0 1 0 7M18 13.8c2.1.8 3.5 3 3.5 6.2"/></symbol>
+      <symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M8 15h3"/></symbol>
+      <symbol id="i-gift" viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="5" rx="1"/><path d="M5 13v8h14v-8M12 8v13M12 8C10 4 6 4 6 6.5S9 8 12 8Zm0 0c2-4 6-4 6-1.5S15 8 12 8Z"/></symbol>
+      <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6Z"/><path d="M8.5 12l2.5 2.5 4.5-5"/></symbol>
+      <symbol id="i-coin" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M10 16.5V7.5h3a2.6 2.6 0 0 1 0 5.2h-3"/></symbol>
+      <symbol id="i-ledger" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></symbol>
+      <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7"/></symbol>
+      <symbol id="i-mail" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></symbol>
+      <symbol id="i-key" viewBox="0 0 24 24"><circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M17 6l3 3M14.5 8.5l2 2"/></symbol>
+      <symbol id="i-export" viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M4 21h16"/></symbol>
+      <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></symbol>
+      <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3.2 3 3.2 15 0 18M12 3c-3.2 3-3.2 15 0 18"/></symbol>
+      <symbol id="i-chart" viewBox="0 0 24 24"><path d="M5 20V11M11 20V5M17 20v-7M2 20h20"/></symbol>
+      <symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 2.5l2.3 6.2 6.2 2.3-6.2 2.3L12 19.5l-2.3-6.2L3.5 11l6.2-2.3Z"/></symbol>
+      <symbol id="i-phone" viewBox="0 0 24 24"><rect x="6" y="2.5" width="12" height="19" rx="2.5"/><path d="M10.5 18.5h3"/></symbol>
+      <symbol id="i-lock" viewBox="0 0 24 24"><rect x="4.5" y="10.5" width="15" height="10" rx="2"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/></symbol>
+      <symbol id="i-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L21 21"/></symbol>
+      <symbol id="i-undo" viewBox="0 0 24 24"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></symbol>
+      <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+      <symbol id="i-qr" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3M21 14v.01M14 21h7v-4"/></symbol>
+      <symbol id="i-card" viewBox="0 0 24 24"><rect x="2.5" y="5" width="19" height="14" rx="2"/><path d="M2.5 10h19M6 15h4"/></symbol>
+      <symbol id="i-keyboard" viewBox="0 0 24 24"><rect x="2.5" y="6" width="19" height="12" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M7 14h10"/></symbol>
+      <symbol id="i-list" viewBox="0 0 24 24"><path d="M10 6h10M10 12h10M10 18h10M3.5 6l1.3 1.3L7.5 4.6M3.5 12l1.3 1.3 2.7-2.7M3.5 18l1.3 1.3 2.7-2.7"/></symbol>
+      <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 11a8 8 0 0 0-14.9-3.5M4 4v4h4M4 13a8 8 0 0 0 14.9 3.5M20 20v-4h-4"/></symbol>
+      <symbol id="i-plug" viewBox="0 0 24 24"><path d="M9 2v5M15 2v5M6 7h12v4a6 6 0 0 1-12 0ZM12 17v5"/></symbol>
+      <symbol id="i-code" viewBox="0 0 24 24"><path d="M8 7l-5 5 5 5M16 7l5 5-5 5M14 4l-4 16"/></symbol>
+      <symbol id="i-cup" viewBox="0 0 24 24"><path d="M4 9h13v4a6 6 0 0 1-6 6h-1a6 6 0 0 1-6-6ZM17 10.5h1.5a2.5 2.5 0 0 1 0 5H17M8 3v3M12 3v3"/></symbol>
+      <symbol id="i-survey" viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V2.8h6V4M9 10.5l1.5 1.5L13.5 9M9 16h6"/></symbol>
+      <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+      <symbol id="i-doc" viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6Z"/><path d="M14 3v4h4M9 12h6M9 16h6"/></symbol>
+      <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5.5v13l10.5-6.5Z"/></symbol>
+      <symbol id="i-pause" viewBox="0 0 24 24"><path d="M8 5v14M16 5v14"/></symbol>
+      <symbol id="i-left" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></symbol>
+      <symbol id="i-right" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></symbol>
+      <symbol id="i-expand" viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></symbol>
+      <symbol id="i-shrink" viewBox="0 0 24 24"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></symbol>
+      <linearGradient id="g-ring" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#c7ef8c"/><stop offset="1" stop-color="#75b42b"/></linearGradient>
+      <linearGradient id="g-hub" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0f6f9c"/><stop offset=".7" stop-color="#199ecf"/><stop offset="1" stop-color="#75b42b"/></linearGradient>
+    </defs>
+  </svg>
+
+  <div class="viewport">
+    <div class="frame">
+      <main class="deck" id="deck" tabindex="-1" aria-roledescription="簡報" aria-label="PointHub 簡報">
+        <div class="deck-bg" aria-hidden="true"><i class="blob b1"></i><i class="blob b2"></i></div>
+        <div class="bars" aria-hidden="true"><i class="bar-slide"></i><i class="bar-auto"></i></div>
+        <p class="brandmark" aria-hidden="true"><span class="logo">★</span>PointHub</p>
+
+        <!-- 1 ─ Cover -->
+        <section class="slide s-cover" data-title="PointHub">
+          <div class="hero-panel a zoom" style="--i:0">
+            <div class="cols cover-cols">
+              <div class="stack">
+                <p class="kicker a" style="--i:1">設計提案簡報</p>
+                <h1 class="hero a" style="--i:2">PointHub</h1>
+                <p class="hero-sub a" style="--i:3">員工活動點數集中管理平台</p>
+                <p class="chain a" style="--i:4"><span>參加活動</span><b aria-hidden="true">→</b><span>累積點數</span><b aria-hidden="true">→</b><span>兌換禮品</span></p>
+                <p class="hint a" style="--i:6"><kbd>→</kbd> 或 <kbd>空白鍵</kbd> 下一張　<kbd>F</kbd> 全螢幕</p>
+              </div>
+              <div class="ring-wrap a zoom" style="--i:3" aria-hidden="true">
+                <svg class="ring" viewBox="0 0 220 220">
+                  <circle class="ring-orbit" cx="110" cy="110" r="106"/>
+                  <circle class="ring-track" cx="110" cy="110" r="90"/>
+                  <circle class="ring-fill" cx="110" cy="110" r="90" pathLength="100"/>
+                </svg>
+                <div class="ring-center"><small>點數餘額</small><b data-count="1250" data-delay="800">0</b><span>距離下一份好禮 83%</span></div>
+                <span class="coin" style="--x:6%;--y:70%;--d:0s">★</span>
+                <span class="coin" style="--x:84%;--y:62%;--d:1.1s">★</span>
+                <span class="coin" style="--x:22%;--y:88%;--d:2.2s">★</span>
+                <span class="coin" style="--x:70%;--y:90%;--d:3.1s">★</span>
+                <span class="coin" style="--x:94%;--y:30%;--d:1.7s">★</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 2 ─ What it is -->
+        <section class="slide s-pillars" data-title="一個平台，串起三件事">
+          <p class="kicker a" style="--i:0">01　認識系統</p>
+          <h2 class="title a" style="--i:1">一個平台，串起三件事</h2>
+          <div class="pillars">
+            <article class="pillar panel a pop" style="--i:2">
+              <span class="badge-icon"><svg><use href="#i-calendar"/></svg></span>
+              <h3>參加活動</h3>
+              <p>活動管理員建立活動並設定點數；員工以 QR Code、員工證感應或人工輸入報到。</p>
+            </article>
+            <article class="pillar panel a pop" style="--i:3">
+              <span class="badge-icon green"><svg><use href="#i-coin"/></svg></span>
+              <h3>累積點數</h3>
+              <p>每一筆發放、兌換與更正都寫入點數帳本，永不修改，餘額永遠對得上。</p>
+            </article>
+            <article class="pillar panel a pop" style="--i:4">
+              <span class="badge-icon gold"><svg><use href="#i-gift"/></svg></span>
+              <h3>兌換禮品</h3>
+              <p>熱門禮品優先排列；兌換當下即扣點並保留庫存，發放後以電子郵件通知。</p>
+            </article>
+          </div>
+          <ul class="chips a" style="--i:6">
+            <li><svg><use href="#i-phone"/></svg>手機與電腦</li>
+            <li><svg><use href="#i-globe"/></svg>英文・日文・繁體中文</li>
+            <li><svg><use href="#i-lock"/></svg>Entra ID 或 Windows 驗證</li>
+            <li><svg><use href="#i-spark"/></svg>節慶主題自動切換</li>
+            <li><svg><use href="#i-plug"/></svg>開放 API 串接其他系統</li>
+          </ul>
+        </section>
+
+        <!-- 3 ─ How it works -->
+        <section class="slide s-flow" data-title="運作方式">
+          <p class="kicker a" style="--i:0">02　運作方式</p>
+          <h2 class="title a" style="--i:1">從活動到禮品，五個步驟</h2>
+          <div class="flow5">
+            <div class="track a" style="--i:2" aria-hidden="true"><i class="track-fill"></i><i class="token">★</i></div>
+            <ol>
+              <li class="step a" style="--i:2;--s:0"><span class="step-dot"><svg><use href="#i-calendar"/></svg></span><h3>建立活動</h3><p>設定點數、人數上限、報到與審核方式</p></li>
+              <li class="step a" style="--i:3;--s:1"><span class="step-dot"><svg><use href="#i-qr"/></svg></span><h3>員工報到</h3><p>掃描 QR Code、感應員工證或人工輸入</p></li>
+              <li class="step a" style="--i:4;--s:2"><span class="step-dot"><svg><use href="#i-check"/></svg></span><h3>審核入帳</h3><p>人工、名單內自動或全部自動核准</p></li>
+              <li class="step a" style="--i:5;--s:3"><span class="step-dot"><svg><use href="#i-gift"/></svg></span><h3>兌換禮品</h3><p>即時扣點並保留該項禮品</p></li>
+              <li class="step a" style="--i:6;--s:4"><span class="step-dot"><svg><use href="#i-mail"/></svg></span><h3>發放通知</h3><p>標記已發放，寄送電子郵件</p></li>
+            </ol>
+          </div>
+          <p class="footnote a" style="--i:8">每一步都留下紀錄：誰、何時、為什麼。</p>
+        </section>
+
+        <!-- 4 ─ Roles -->
+        <section class="slide s-roles" data-title="四種角色">
+          <p class="kicker a" style="--i:0">03　角色權限</p>
+          <h2 class="title a" style="--i:1">四種角色，各司其職</h2>
+          <div class="roles">
+            <article class="role panel a pop" style="--i:2;--c:#147ea6;--t:#e3f3fa">
+              <header><span class="badge-icon"><svg><use href="#i-user"/></svg></span><h3>一般員工</h3></header>
+              <ul><li>查看點數與紀錄</li><li>活動報到</li><li>兌換禮品</li></ul>
+              <small>所有登入的人</small>
+            </article>
+            <article class="role panel a pop" style="--i:3;--c:#4f8a12;--t:#edf6e1">
+              <header><span class="badge-icon green"><svg><use href="#i-calendar"/></svg></span><h3>活動管理員</h3></header>
+              <ul><li>建立活動、設定點數</li><li>QR Code、刷卡站、人工輸入</li><li>審核報到、匯入名單</li></ul>
+              <small>只看得到自己的活動</small>
+            </article>
+            <article class="role panel a pop" style="--i:4;--c:#a8650f;--t:#fbf1de">
+              <header><span class="badge-icon gold"><svg><use href="#i-gift"/></svg></span><h3>禮品管理員</h3></header>
+              <ul><li>禮品、圖片與庫存</li><li>每人兌換上限、停用</li><li>發放、取消與退還</li></ul>
+              <small>所有兌換申請</small>
+            </article>
+            <article class="role panel a pop" style="--i:5;--c:#7246c2;--t:#f1eafc">
+              <header><span class="badge-icon violet"><svg><use href="#i-shield"/></svg></span><h3>系統管理員</h3></header>
+              <ul><li>總覽與點數帳本</li><li>員工、角色、員工證</li><li>主題、郵件、API 金鑰、稽核</li></ul>
+              <small>全部功能</small>
+            </article>
+          </div>
+          <p class="footnote a" style="--i:7">一個人可以同時擁有多個角色，由系統管理員授予。</p>
+        </section>
+
+        <!-- 5 ─ Event admin: preparing -->
+        <section class="slide s-prep" data-title="活動前的準備">
+          <p class="kicker a" style="--i:0">04　活動管理員・事前準備</p>
+          <h2 class="title a" style="--i:1">活動前設定一次，現場自動計點</h2>
+          <div class="cols prep-cols">
+            <div class="form-card panel a left" style="--i:2">
+              <header><span class="badge-icon"><svg><use href="#i-calendar"/></svg></span><b>新增活動</b><em class="pill">草稿</em></header>
+              <div class="frow" style="--f:0"><small>名稱與說明（中・英・日）</small><span class="fval">年終啟動大會　HQ 12F Hall</span></div>
+              <div class="frow split" style="--f:1">
+                <div><small>每次出席點數</small><span class="fval pts">+50 點</span></div>
+                <div><small>人數上限（選填）</small><span class="fval">150 人</span></div>
+              </div>
+              <div class="frow" style="--f:2"><small>報到用的 QR Code</small><span class="seg" style="--n:2;--pick:1"><i></i><span>固定連結（海報）</span><span>動態報到碼（30 秒）</span></span></div>
+              <div class="frow" style="--f:3"><small>審核方式</small><span class="seg" style="--n:3;--pick:1"><i></i><span>逐筆人工</span><span>名單內自動</span><span>全部自動</span></span></div>
+              <div class="frow inline" style="--f:4"><small>只有名單內的人可以報到</small><span class="switch" aria-hidden="true"></span></div>
+            </div>
+            <div class="roster-card panel a right" style="--i:3">
+              <header><span class="badge-icon green"><svg><use href="#i-users"/></svg></span><b>參加名單</b><em class="pill green">CSV 匯入</em></header>
+              <div class="drop"><span class="file"><svg><use href="#i-doc"/></svg>參加名單.csv</span><small>人資或報名表單匯出即可</small></div>
+              <ul class="match">
+                <li class="m-ok" style="--m:0;--w:94%"><span>符合</span><i><b></b></i><em data-count="132" data-delay="2300">0</em></li>
+                <li class="m-miss" style="--m:1;--w:8%"><span>查無此人</span><i><b></b></i><em data-count="5" data-delay="2450">0</em></li>
+                <li class="m-off" style="--m:2;--w:5%"><span>已離職</span><i><b></b></i><em data-count="2" data-delay="2600">0</em></li>
+                <li class="m-dup" style="--m:3;--w:3%"><span>重複</span><i><b></b></i><em data-count="1" data-delay="2750">0</em></li>
+              </ul>
+              <p class="rematch"><svg><use href="#i-refresh"/></svg><span>新進員工加入後按<b>重新比對</b>即可，不必重新上傳</span></p>
+            </div>
+          </div>
+          <p class="footnote a" style="--i:6">畫面與數字為示意。名單以員工編號比對，其次以電子郵件。</p>
+        </section>
+
+        <!-- 6 ─ Event admin: check-in methods -->
+        <section class="slide s-checkin" data-title="三種報到方式" data-hook="qr">
+          <p class="kicker a" style="--i:0">05　活動管理員・現場報到</p>
+          <h2 class="title a" style="--i:1">三種報到方式，依場地與人數選用</h2>
+          <div class="cards3">
+            <article class="card panel a pop" style="--i:2">
+              <div class="visual qr-visual" aria-hidden="true">
+                <svg class="qr" viewBox="-1 -1 27 27"><path class="qr-mods" fill-rule="evenodd"/></svg>
+                <i class="scan"></i>
+                <div class="countdown"><svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="16"/><circle class="cd-fill" cx="20" cy="20" r="16" pathLength="100"/></svg><b>30</b></div>
+              </div>
+              <h3>QR Code 自助報到</h3>
+              <p><b>固定連結</b>印在海報上；<b>動態報到碼</b>在會場螢幕每 30 秒更換，轉傳的照片很快失效。另有投影用的全螢幕模式。</p>
+            </article>
+            <article class="card panel a pop" style="--i:3">
+              <div class="visual nfc-visual" aria-hidden="true">
+                <i class="wave w1"></i><i class="wave w2"></i><i class="wave w3"></i>
+                <span class="reader"></span>
+                <span class="badge-card"><i></i><b>員工證</b></span>
+                <span class="tick"><svg><use href="#i-check"/></svg></span>
+              </div>
+              <h3>刷卡站感應</h3>
+              <p>入口放一台接讀卡機的筆電：感應一下就顯示姓名並<b>立即發放點數</b>。支援 USB 鍵盤式與 PC/SC 讀卡機。</p>
+            </article>
+            <article class="card panel a pop" style="--i:4">
+              <div class="visual type-visual" aria-hidden="true">
+                <span class="field"><small>員工編號</small><span class="typed">102358</span><i class="caret"></i></span>
+                <span class="result"><svg><use href="#i-check"/></svg>已報到　+50</span>
+              </div>
+              <h3>人工輸入</h3>
+              <p>忘記帶員工證、或卡片尚未登記的人，由活動管理員輸入員工編號，<b>立即核准</b>。</p>
+            </article>
+          </div>
+          <p class="footnote a" style="--i:6">QR Code 倒數為加速示意。</p>
+        </section>
+
+        <!-- 7 ─ Event admin: live tally -->
+        <section class="slide s-tally" data-title="即時計點" data-hook="tally">
+          <p class="kicker a" style="--i:0">06　活動管理員・即時計點</p>
+          <h2 class="title a" style="--i:1">各種管道報到，匯集到同一份即時名單</h2>
+          <div class="tally-grid">
+            <ul class="sources">
+              <li class="source panel a left" style="--i:2"><span class="badge-icon"><svg><use href="#i-qr"/></svg></span><span><b>QR Code 自助報到</b>依活動的審核方式</span></li>
+              <li class="source panel a left" style="--i:3"><span class="badge-icon green"><svg><use href="#i-card"/></svg></span><span><b>刷卡站感應</b>立即核准、立即入帳</span></li>
+              <li class="source panel a left" style="--i:4"><span class="badge-icon gold"><svg><use href="#i-keyboard"/></svg></span><span><b>人工輸入員工編號</b>立即核准、立即入帳</span></li>
+              <li class="source panel a left" style="--i:5"><span class="badge-icon violet"><svg><use href="#i-list"/></svg></span><span><b>待審核清單</b>逐筆、全部，或只核准名單內</span></li>
+            </ul>
+            <svg class="merge a" style="--i:5" viewBox="0 0 80 320" preserveAspectRatio="none" aria-hidden="true">
+              <path d="M0 40 C40 40 40 160 80 160"/><path d="M0 120 C40 120 40 160 80 160"/><path d="M0 200 C40 200 40 160 80 160"/><path d="M0 280 C40 280 40 160 80 160"/>
+            </svg>
+            <div class="board panel a zoom" style="--i:6">
+              <header><b>年終啟動大會</b><span class="live">報到中</span></header>
+              <div class="stats">
+                <div class="st-ok"><small>已核准</small><b data-tally="approved">96</b></div>
+                <div class="st-wait"><small>待審核</small><b data-tally="pending">3</b></div>
+                <div><small>名單人數</small><b>140</b></div>
+              </div>
+              <div class="coverage"><small>名單出席率</small><i><b data-tally="bar"></b></i><em data-tally="pct">66%</em></div>
+              <ul class="feed" aria-hidden="true"></ul>
+            </div>
+          </div>
+          <ul class="chips a" style="--i:8">
+            <li><svg><use href="#i-ledger"/></svg>每筆核准即寫入點數帳本</li>
+            <li><svg><use href="#i-users"/></svg>現場報名特別標示</li>
+            <li><svg><use href="#i-export"/></svg>出席紀錄匯出 CSV</li>
+            <li><svg><use href="#i-undo"/></svg>誤發點數可撤銷</li>
+          </ul>
+        </section>
+
+        <!-- 8 ─ Employee experience -->
+        <section class="slide s-employee" data-title="員工的使用體驗">
+          <div class="cols">
+            <div class="phone-wrap a right" style="--i:1">
+              <div class="phone"><img src="screenshots/dashboard-mobile.png" alt="員工首頁在手機上的畫面"></div>
+              <div class="toast" aria-hidden="true"><svg><use href="#i-check"/></svg><span><b>+50 點</b><small>報到已核准</small></span></div>
+              <div class="confetti" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+            </div>
+            <div class="stack">
+              <p class="kicker a" style="--i:0">07　一般員工</p>
+              <h2 class="title a" style="--i:1">一頁看完自己的點數</h2>
+              <ul class="checks">
+                <li class="panel a" style="--i:2"><svg><use href="#i-coin"/></svg><span><b>等級圓環</b>隨著接近下一份好禮逐漸填滿</span></li>
+                <li class="panel a" style="--i:3"><svg><use href="#i-qr"/></svg><span><b>一鍵報到</b>首頁直接開啟相機掃描</span></li>
+                <li class="panel a" style="--i:4"><svg><use href="#i-gift"/></svg><span><b>禮品目錄</b>熱門優先，可依點數排序、只看點數足夠的</span></li>
+                <li class="panel a" style="--i:5"><svg><use href="#i-ledger"/></svg><span><b>我的兌換</b>待發放、已發放、已取消、已退還</span></li>
+                <li class="panel a" style="--i:6"><svg><use href="#i-search"/></svg><span><b>三種語言搜尋</b>活動、禮品與自己的每一筆紀錄</span></li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        <!-- 9 ─ Festival themes -->
+        <section class="slide s-themes" data-title="節慶主題" data-hook="themes">
+          <div class="cols">
+            <figure class="browser theme-browser a left" style="--i:1">
+              <div class="browser-bar"><i></i><i></i><i></i><span class="theme-name"></span></div>
+              <div class="theme-stack"></div>
+            </figure>
+            <div class="stack">
+              <p class="kicker a" style="--i:0">08　畫面設計</p>
+              <h2 class="title a" style="--i:1">節慶到了，網站自動換裝</h2>
+              <p class="lead a" style="--i:2">依台灣節慶行事曆自動切換配色、像素風圖案與背景動畫。農曆節日由系統逐年計算，不需要維護時程表。</p>
+              <ul class="festivals a" style="--i:3"></ul>
+              <p class="lead small a" style="--i:4">系統管理員可略過某個節慶，或強制指定主題（例如公司週年慶）。</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- 10 ─ Gifts -->
+        <section class="slide s-gifts" data-title="禮品兌換與發放">
+          <div class="cols">
+            <div class="stack">
+              <p class="kicker a" style="--i:0">09　禮品</p>
+              <h2 class="title a" style="--i:1">同一份禮品，<br>不會承諾給兩個人</h2>
+              <ul class="ticks">
+                <li class="a" style="--i:2"><svg><use href="#i-check"/></svg>點數足夠</li>
+                <li class="a" style="--i:3"><svg><use href="#i-check"/></svg>仍有庫存</li>
+                <li class="a" style="--i:4"><svg><use href="#i-check"/></svg>未超過每人上限</li>
+              </ul>
+              <svg class="states a" style="--i:5" viewBox="0 0 470 210" role="img" aria-label="兌換申請的狀態：申請後為待發放；待發放可標記為已發放或取消；已發放可辦理退還。">
+                <g class="st-edges">
+                  <path d="M118 40H160" pathLength="1" style="--e:0"/>
+                  <path d="M278 40H320" pathLength="1" style="--e:1"/>
+                  <path d="M219 62V140" pathLength="1" style="--e:2" class="dash"/>
+                  <path d="M380 62V140" pathLength="1" style="--e:3" class="dash"/>
+                </g>
+                <g class="st-node" style="--n:0"><rect x="4" y="18" width="114" height="44" rx="22"/><text x="61" y="46">兌換申請</text></g>
+                <g class="st-node amber" style="--n:1"><rect x="162" y="18" width="114" height="44" rx="22"/><text x="219" y="46">待發放</text></g>
+                <g class="st-node ok" style="--n:2"><rect x="322" y="18" width="114" height="44" rx="22"/><text x="379" y="46">已發放</text></g>
+                <g class="st-node muted" style="--n:3"><rect x="162" y="142" width="114" height="44" rx="22"/><text x="219" y="170">已取消</text></g>
+                <g class="st-node muted" style="--n:4"><rect x="322" y="142" width="114" height="44" rx="22"/><text x="379" y="170">已退還</text></g>
+                <text class="st-label" x="226" y="106" text-anchor="start">退點</text>
+                <text class="st-label" x="387" y="106" text-anchor="start">退點</text>
+                <text class="st-label" x="299" y="30">發放</text>
+              </svg>
+            </div>
+            <figure class="browser a left" style="--i:2">
+              <div class="browser-bar"><i></i><i></i><i></i></div>
+              <img src="screenshots/gifts.png" alt="禮品頁：熱門優先，可排序與篩選">
+            </figure>
+          </div>
+        </section>
+
+        <!-- 11 ─ Ledger -->
+        <section class="slide s-ledger" data-title="點數帳本">
+          <p class="kicker a" style="--i:0">10　點數帳本</p>
+          <h2 class="title a" style="--i:1">每一筆都對得上，誰做的也看得出</h2>
+          <div class="cols ledger-cols">
+            <div class="ledger panel a" style="--i:2" role="table" aria-label="點數帳本（示意資料）">
+              <div class="lrow head" role="row"><span role="columnheader">類型</span><span role="columnheader">內容</span><span role="columnheader">點數</span></div>
+              <div class="lrow" role="row" style="--r:0"><span role="cell"><em class="t-earn">報到</em></span><span role="cell">年度家庭日</span><span role="cell" class="plus">+500</span></div>
+              <div class="lrow" role="row" style="--r:1"><span role="cell"><em class="t-earn">報到</em></span><span role="cell">健康講座</span><span role="cell" class="plus">+50</span></div>
+              <div class="lrow" role="row" style="--r:2"><span role="cell"><em class="t-spend">兌換</em></span><span role="cell">保溫瓶</span><span role="cell" class="minus">−300</span></div>
+              <div class="lrow struck" role="row" style="--r:3"><span role="cell"><em class="t-adjust">調整</em></span><span role="cell">補登讀書會出席<i class="stamp">已撤銷</i></span><span role="cell" class="plus">+80</span></div>
+              <div class="lrow revert" role="row" style="--r:4"><span role="cell"><em class="t-revert">撤銷</em></span><span role="cell"><svg><use href="#i-undo"/></svg>上一筆・原因：活動判斷錯誤</span><span role="cell" class="minus">−80</span></div>
+              <div class="lrow total" role="row" style="--r:5"><span role="cell"></span><span role="cell">餘額</span><span role="cell"><b data-count="250" data-delay="2300">0</b></span></div>
+            </div>
+            <ul class="principles">
+              <li class="a" style="--i:4"><span class="badge-icon"><svg><use href="#i-lock"/></svg></span><span><b>永不修改或刪除</b>錯誤以「撤銷」或附原因的「調整」更正</span></li>
+              <li class="a" style="--i:5"><span class="badge-icon green"><svg><use href="#i-shield"/></svg></span><span><b>防止重複</b>重複掃描、最後一份禮品被兌換兩次都會被擋下</span></li>
+              <li class="a" style="--i:6"><span class="badge-icon"><svg><use href="#i-eye"/></svg></span><span><b>稽核紀錄</b>每次更正與匯出都記下誰、何時、做了什麼</span></li>
+            </ul>
+          </div>
+          <p class="footnote a" style="--i:8">表中為示意資料。</p>
+        </section>
+
+        <!-- 12 ─ Admin -->
+        <section class="slide s-admin" data-title="管理介面">
+          <div class="cols">
+            <div class="stack">
+              <p class="kicker a" style="--i:0">11　管理介面</p>
+              <h2 class="title a" style="--i:1">全貌一目了然</h2>
+              <ul class="checks compact">
+                <li class="panel a" style="--i:2"><svg><use href="#i-chart"/></svg><span><b>總覽</b>本月發放與兌換、參與率、近 12 週趨勢</span></li>
+                <li class="panel a" style="--i:3"><svg><use href="#i-search"/></svg><span><b>員工查詢</b>完整紀錄，附原因直接加點或扣點</span></li>
+                <li class="panel a" style="--i:4"><svg><use href="#i-export"/></svg><span><b>CSV 匯出</b>帳本、出席、兌換、員工，Excel 直接開啟</span></li>
+                <li class="panel a" style="--i:5"><svg><use href="#i-mail"/></svg><span><b>電子郵件</b>三種語言範本，失敗自動重試</span></li>
+                <li class="panel a" style="--i:6"><svg><use href="#i-key"/></svg><span><b>API 金鑰</b>發給其他系統，可設到期、隨時撤銷</span></li>
+              </ul>
+            </div>
+            <div class="tilt-wrap a zoom" style="--i:2">
+              <figure class="browser tilt">
+                <div class="browser-bar"><i></i><i></i><i></i></div>
+                <img src="screenshots/admin-dashboard.png" alt="管理總覽">
+              </figure>
+              <span class="float f1" aria-hidden="true"><svg><use href="#i-chart"/></svg>12 週趨勢</span>
+              <span class="float f2" aria-hidden="true"><svg><use href="#i-check"/></svg>待核准報到</span>
+              <span class="float f3" aria-hidden="true"><svg><use href="#i-eye"/></svg>稽核紀錄</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- 13 ─ Integration API: who can connect -->
+        <section class="slide s-api" data-title="開放 API">
+          <p class="kicker a" style="--i:0">12　擴充性</p>
+          <h2 class="title a" style="--i:1">開放 API：讓其他系統也用得上點數</h2>
+          <div class="cols api-cols">
+            <svg class="hub a zoom" style="--i:2" viewBox="0 0 460 330" role="img" aria-label="PointHub 整合 API 連接人資系統、員工餐廳與販賣機、問卷工具，以及未來的其他系統。">
+              <g class="spokes">
+                <path id="sp1" d="M230 165 L95 58"/>
+                <path id="sp2" d="M230 165 L365 58"/>
+                <path id="sp3" d="M230 165 L95 272"/>
+                <path id="sp4" d="M230 165 L365 272" class="future"/>
+              </g>
+              <g class="packets">
+                <circle r="5" class="g"><animateMotion dur="2.2s" repeatCount="indefinite" keyPoints="1;0" keyTimes="0;1" calcMode="linear"><mpath href="#sp1"/></animateMotion></circle>
+                <circle r="5"><animateMotion dur="2s" begin=".5s" repeatCount="indefinite"><mpath href="#sp2"/></animateMotion></circle>
+                <circle r="5" class="g"><animateMotion dur="2s" begin="1s" repeatCount="indefinite" keyPoints="1;0" keyTimes="0;1" calcMode="linear"><mpath href="#sp2"/></animateMotion></circle>
+                <circle r="5" class="g"><animateMotion dur="2.4s" begin=".3s" repeatCount="indefinite" keyPoints="1;0" keyTimes="0;1" calcMode="linear"><mpath href="#sp3"/></animateMotion></circle>
+              </g>
+              <g class="hub-core"><circle cx="230" cy="165" r="62"/><text x="230" y="160" class="big">PointHub</text><text x="230" y="182" class="sub-w">整合 API v1</text></g>
+              <g class="hub-node" style="--n:0"><rect x="20" y="22" width="150" height="72" rx="16"/><use href="#i-users" x="34" y="36" width="24" height="24"/><text x="64" y="54" class="lbl">人資系統</text><text x="34" y="80" class="sub">同步新進、異動、離職</text></g>
+              <g class="hub-node" style="--n:1"><rect x="290" y="22" width="150" height="72" rx="16"/><use href="#i-cup" x="304" y="36" width="24" height="24"/><text x="334" y="54" class="lbl">員工餐廳・販賣機</text><text x="304" y="80" class="sub">感應員工證、扣點消費</text></g>
+              <g class="hub-node" style="--n:2"><rect x="20" y="236" width="150" height="72" rx="16"/><use href="#i-survey" x="34" y="250" width="24" height="24"/><text x="64" y="268" class="lbl">問卷工具</text><text x="34" y="294" class="sub">填寫完成自動加點</text></g>
+              <g class="hub-node future" style="--n:3"><rect x="290" y="236" width="150" height="72" rx="16"/><use href="#i-plug" x="304" y="250" width="24" height="24"/><text x="334" y="268" class="lbl">未來的系統</text><text x="304" y="294" class="sub">任何能發 HTTPS 請求的系統</text></g>
+            </svg>
+            <div class="scopes">
+              <article class="scope panel a right" style="--i:3">
+                <header><code>points:read</code><span>查詢點數</span></header>
+                <ul><li><em class="get">GET</em>/employees/{員工編號}/points</li><li><em class="get">GET</em>/employees/{員工編號}/transactions</li><li><em class="get">GET</em>/cards/{卡號}/points</li></ul>
+              </article>
+              <article class="scope panel a right" style="--i:4">
+                <header><code>points:write</code><span>加點・扣點</span></header>
+                <ul><li><em class="post">POST</em>/transactions</li></ul>
+              </article>
+              <article class="scope panel a right" style="--i:5">
+                <header><code>employees:write</code><span>員工資料</span></header>
+                <ul><li><em class="put">PUT</em>/employees/{員工編號}</li></ul>
+              </article>
+              <p class="footnote a" style="--i:6">路徑前綴 <code>/api/integration/v1</code>。每個系統各自一把金鑰，只開放需要的權限。</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- 14 ─ Integration API: how a call works -->
+        <section class="slide s-apicall" data-title="API 串接方式">
+          <p class="kicker a" style="--i:0">13　串接方式</p>
+          <h2 class="title a" style="--i:1">一個請求完成扣點，重送也不會重複</h2>
+          <div class="cols call-cols">
+            <div class="code a left" style="--i:2">
+              <div class="code-bar"><i></i><i></i><i></i><span>員工餐廳機台 → PointHub</span></div>
+<pre><span class="ln" style="--l:0"><b class="k">POST</b> /api/integration/v1/transactions</span>
+<span class="ln" style="--l:1"><b class="h">X-Api-Key:</b> phk_••••••••••••</span>
+<span class="ln" style="--l:2">{</span>
+<span class="ln" style="--l:3">  <b class="p">"employeeNo"</b>: <b class="s">"102358"</b>,</span>
+<span class="ln" style="--l:4">  <b class="p">"amount"</b>: <b class="n">-60</b>,</span>
+<span class="ln" style="--l:5">  <b class="p">"reason"</b>: <b class="s">"員工餐廳：午餐"</b>,</span>
+<span class="ln" style="--l:6">  <b class="p">"externalReference"</b>: <b class="s">"POS-1127-0042"</b></span>
+<span class="ln" style="--l:7">}</span>
+<span class="ln resp" style="--l:9"><b class="ok">← 201 Created</b>  已扣 60 點，寫入點數帳本</span>
+<span class="ln resp" style="--l:10"><b class="c">// 網路斷線，機台重送同一筆…</b></span>
+<span class="ln resp" style="--l:11"><b class="ok">← 200 OK</b>  回傳原交易，不會再扣一次</span></pre>
+            </div>
+            <ul class="guards">
+              <li class="a" style="--i:3"><span class="badge-icon"><svg><use href="#i-key"/></svg></span><span><b>各自的金鑰與權限</b>系統管理員發給每個系統，只開放需要的範圍</span></li>
+              <li class="a" style="--i:4"><span class="badge-icon green"><svg><use href="#i-lock"/></svg></span><span><b>只存雜湊值</b>可設到期日，隨時撤銷</span></li>
+              <li class="a" style="--i:5"><span class="badge-icon gold"><svg><use href="#i-clock"/></svg></span><span><b>流量上限</b>每把金鑰每分鐘 120 次，擋下失控的程式</span></li>
+              <li class="a" style="--i:6"><span class="badge-icon"><svg><use href="#i-shield"/></svg></span><span><b>餘額不會變負數</b>點數不足時回應 409，不會扣點</span></li>
+              <li class="a" style="--i:7"><span class="badge-icon violet"><svg><use href="#i-ledger"/></svg></span><span><b>同一本帳</b>標示來源系統，可像其他紀錄一樣撤銷</span></li>
+            </ul>
+          </div>
+        </section>
+
+        <!-- 15 ─ Architecture -->
+        <section class="slide s-arch" data-title="系統架構">
+          <p class="kicker a" style="--i:0">14　系統架構</p>
+          <h2 class="title a" style="--i:1">只需部署一個應用程式</h2>
+          <svg class="arch a" style="--i:2" viewBox="0 0 900 300" role="img" aria-label="員工的手機與電腦、活動刷卡站、其他系統連到 IIS 上的 PointHub；PointHub 使用 Microsoft Entra ID 登入、SQL Server、禮品圖片資料夾與公司 SMTP 伺服器。">
+            <g class="wires">
+              <path id="w1" d="M220 50 C280 50 290 120 340 128"/>
+              <path id="w2" d="M220 150 H340"/>
+              <path id="w3" d="M220 250 C280 250 290 180 340 172"/>
+              <path id="w4" d="M560 118 C610 110 620 40 680 40"/>
+              <path id="w5" d="M560 138 C610 136 630 113 680 113"/>
+              <path id="w6" d="M560 162 C610 164 630 187 680 187"/>
+              <path id="w7" d="M560 182 C610 190 620 260 680 260"/>
+            </g>
+            <g class="packets">
+              <circle r="5"><animateMotion dur="2.4s" repeatCount="indefinite"><mpath href="#w1"/></animateMotion></circle>
+              <circle r="5"><animateMotion dur="2s" begin="0.6s" repeatCount="indefinite"><mpath href="#w2"/></animateMotion></circle>
+              <circle r="5" class="g"><animateMotion dur="2.6s" begin="1.2s" repeatCount="indefinite"><mpath href="#w3"/></animateMotion></circle>
+              <circle r="5"><animateMotion dur="2.2s" begin="0.3s" repeatCount="indefinite"><mpath href="#w4"/></animateMotion></circle>
+              <circle r="5" class="g"><animateMotion dur="1.8s" begin="0.9s" repeatCount="indefinite"><mpath href="#w5"/></animateMotion></circle>
+              <circle r="5"><animateMotion dur="2.4s" begin="1.5s" repeatCount="indefinite"><mpath href="#w6"/></animateMotion></circle>
+              <circle r="5" class="g"><animateMotion dur="2.8s" begin="0.4s" repeatCount="indefinite"><mpath href="#w7"/></animateMotion></circle>
+            </g>
+            <g class="node" style="--n:0"><rect x="20" y="22" width="200" height="56" rx="14"/><text x="120" y="46">員工手機／電腦</text><text x="120" y="66" class="sub">瀏覽器</text></g>
+            <g class="node" style="--n:1"><rect x="20" y="122" width="200" height="56" rx="14"/><text x="120" y="146">活動刷卡站</text><text x="120" y="166" class="sub">瀏覽器＋讀卡機</text></g>
+            <g class="node api" style="--n:2"><rect x="20" y="222" width="200" height="56" rx="14"/><text x="120" y="246">其他系統</text><text x="120" y="266" class="sub">整合 API・金鑰</text></g>
+            <g class="node core" style="--n:3"><rect x="340" y="80" width="220" height="140" rx="20"/><text x="450" y="124" class="big">PointHub</text><text x="450" y="150" class="sub-w">IIS・.NET 10</text><text x="450" y="172" class="sub-w">網頁＋API</text><text x="450" y="194" class="sub-w">背景郵件佇列</text></g>
+            <g class="node" style="--n:4"><rect x="680" y="18" width="200" height="44" rx="12"/><text x="780" y="46">Microsoft Entra ID</text></g>
+            <g class="node" style="--n:5"><rect x="680" y="91" width="200" height="44" rx="12"/><text x="780" y="119">SQL Server</text></g>
+            <g class="node" style="--n:6"><rect x="680" y="165" width="200" height="44" rx="12"/><text x="780" y="193">禮品圖片資料夾</text></g>
+            <g class="node" style="--n:7"><rect x="680" y="238" width="200" height="44" rx="12"/><text x="780" y="266">公司 SMTP 伺服器</text></g>
+          </svg>
+          <ul class="chips a" style="--i:4">
+            <li><svg><use href="#i-ledger"/></svg>點數是一本帳</li>
+            <li><svg><use href="#i-mail"/></svg>郵件不遺失，自動重試</li>
+            <li><svg><use href="#i-shield"/></svg>上傳圖片一律重新編碼</li>
+            <li><svg><use href="#i-key"/></svg>金鑰只存雜湊、可撤銷</li>
+          </ul>
+        </section>
+
+        <!-- 16 ─ Next steps -->
+        <section class="slide s-next" data-title="下一步">
+          <div class="sparkles" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+          <p class="kicker a" style="--i:0">15　下一步</p>
+          <h2 class="title big a" style="--i:1">一起把細節定下來</h2>
+          <ol class="next3">
+            <li class="panel a pop" style="--i:2"><b>1</b><span><strong>檢視畫面與流程</strong>每個角色的畫面與八張作業流程圖</span></li>
+            <li class="panel a pop" style="--i:3"><b>2</b><span><strong>決定待決事項</strong>共 <em data-decisions>19</em> 項，可在提案頁直接選擇方案</span></li>
+            <li class="panel a pop" style="--i:4"><b>3</b><span><strong>確認上線條件</strong>登入方式、手機如何連到網站、要串接哪些系統</span></li>
+          </ol>
+          <p class="actions a" style="--i:6">
+            <a class="cta" href="index.html#decisions">查看待決事項<svg><use href="#i-arrow"/></svg></a>
+            <a class="cta ghost" href="index.html">開啟完整設計提案</a>
+          </p>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <nav class="controls" aria-label="簡報控制">
+    <a class="ctl" href="index.html" title="返回設計提案"><svg><use href="#i-doc"/></svg><span class="ctl-text">設計提案</span></a>
+    <span class="sep" aria-hidden="true"></span>
+    <button type="button" class="ctl" id="prev" aria-label="上一張" title="上一張（←）"><svg><use href="#i-left"/></svg></button>
+    <div class="dots" id="dots"></div>
+    <button type="button" class="ctl" id="next" aria-label="下一張" title="下一張（→）"><svg><use href="#i-right"/></svg></button>
+    <span class="counter" id="counter" aria-hidden="true"></span>
+    <span class="sep" aria-hidden="true"></span>
+    <button type="button" class="ctl" id="auto" aria-pressed="false" title="自動播放（P）"><svg><use href="#i-play"/></svg><span class="sr">自動播放</span></button>
+    <button type="button" class="ctl" id="full" title="全螢幕（F）"><svg><use href="#i-expand"/></svg><span class="sr">全螢幕</span></button>
+  </nav>
+  <p class="sr" id="live" aria-live="polite"></p>
+
+  <script src="proposal-data.js"></script>
+  <script src="slides.js"></script>
+</body>
+</html>

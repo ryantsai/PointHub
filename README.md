@@ -9,7 +9,7 @@ Central point management for employee activities: employees earn points by takin
 - **Other applications** read balances and add or spend points through an API-key protected integration API.
 - English, Japanese and Traditional Chinese; seasonal themes that follow Taiwan's festival calendar; email notifications over SMTP.
 
-Status: **scaffold**. The backend, the database and the web front end run end to end with sample data. A walk-through with screenshots, workflows and the open decisions is in the **proposal page**: start the app and open <http://localhost:5173/proposal/index.html> (source in `web/public/proposal`).
+Status: **scaffold**. The backend, the database and the web front end run end to end with sample data. A walk-through with screenshots, workflows and the open decisions is in the **proposal page**: start the app and open <http://localhost:5173/proposal/index.html> (source in `web/public/proposal`). An animated slide deck that introduces the system for meetings is at <http://localhost:5173/proposal/slides.html>, linked from the proposal page.
 
 ## Layout
 
