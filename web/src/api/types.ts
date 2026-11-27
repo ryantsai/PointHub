@@ -96,7 +96,8 @@ export type MyPoints = {
 export type EventStatus = 'draft' | 'open' | 'closed' | 'cancelled';
 export type ApprovalMode = 'manual' | 'autoApproveRoster' | 'autoApproveAll';
 export type CheckInStatus = 'pending' | 'approved' | 'rejected' | 'reverted';
-export type CheckInMethod = 'link' | 'card' | 'manual';
+/** roster: a host awarded points to the imported roster (attendance recorded elsewhere, e.g. an online event). */
+export type CheckInMethod = 'link' | 'card' | 'manual' | 'roster';
 /** static: one link per event (posters). rotating: the code on the host's screen changes every few seconds. */
 export type CheckInMode = 'static' | 'rotating';
 export type EventSummary = {
@@ -176,6 +177,13 @@ export type RosterImportResult = {
   inactive: number;
   duplicate: number;
   entries: RosterEntry[];
+};
+export type RosterAwardSkipReason = 'alreadyDecided' | 'notMatched' | 'inactive' | 'eventFull';
+export type RosterAwardResult = {
+  awarded: number;          // attendance recorded and points awarded
+  approvedPending: number;  // waiting self check-ins approved
+  alreadyAwarded: number;   // approved before; left alone
+  skipped: { employeeNo: string; name: string | null; reason: RosterAwardSkipReason }[];
 };
 
 // Gifts

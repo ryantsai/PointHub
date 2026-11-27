@@ -102,7 +102,8 @@
   "checkInMethod": {
     "link": "リンク／QR",
     "card": "カード",
-    "manual": "手入力"
+    "manual": "手入力",
+    "roster": "名簿から一括"
   },
   "rosterMatch": {
     "matched": "一致",
@@ -363,6 +364,30 @@
         "match": "照合結果",
         "employee": "社員",
         "checkIn": "チェックイン"
+      },
+      "award": {
+        "title": "この名簿にポイントを付与",
+        "hint": "オンラインイベントや、ほかのシステムで出席を記録した場合に使います。修了者の名簿を取り込み、まとめてポイントを付与します。すでに付与済みの人は飛ばすので、行を追加して取り込んだあとに再実行しても問題ありません。",
+        "buttonCount_one": "{{count}} 人に付与",
+        "buttonCount_other": "{{count}} 人に付与",
+        "button": "ポイントを付与",
+        "confirmTitle": "名簿の人にポイントを付与しますか？",
+        "confirmBody_one": "名簿の {{count}} 人に {{points}} ポイントを付与し、メールで通知します。出席は「名簿から一括」として記録されます。",
+        "confirmBody_other": "名簿の {{count}} 人にそれぞれ {{points}} ポイントを付与し、メールで通知します。出席は「名簿から一括」として記録されます。",
+        "notAllowed": "名簿から付与するには、イベントを受付中にするか、終了後に締め切ってください。",
+        "done_one": "{{count}} 人に付与しました",
+        "done_other": "{{count}} 人に付与しました",
+        "awarded": "新たに付与",
+        "approvedPending": "承認待ちを承認",
+        "alreadyAwarded": "付与済み",
+        "skipped": "スキップ",
+        "more": "ほか {{count}} 件",
+        "reasons": {
+          "alreadyDecided": "チェックインが却下済み、またはポイントが取り消し済み",
+          "notMatched": "社員を 1 人に特定できません",
+          "inactive": "退職済み",
+          "eventFull": "定員に達しています"
+        }
       }
     }
   },

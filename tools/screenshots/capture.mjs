@@ -92,6 +92,40 @@ await shot(eventAdmin, 'event-form', '/host/events?new=1');
 await shot(eventAdmin, 'host-qr', `/host/events/${rotatingEvent.id}?tab=checkin`, { settle: 3000 });
 await shot(eventAdmin, 'host-approvals', `/host/events/${staticEvent.id}?tab=approvals`);
 await shot(eventAdmin, 'host-roster', `/host/events/${staticEvent.id}?tab=roster`);
+// An online event that has ended: the completion list comes from the meeting or e-learning tool, is imported as
+// the roster and awarded in one go. Created on the first run; later runs show it already awarded.
+const onlineTitle = { en: 'Online Security Awareness Course', ja: 'オンライン情報セキュリティ講座', zhHant: '線上資安意識課程' };
+let online = events.find((event) => event.title.en === onlineTitle.en);
+if (!online) {
+  const yesterday = new Date(Date.now() - 24 * 3600 * 1000);
+  online = await (await eventAdmin.request.post(`${base}/api/host/events`, { headers, data: {
+    title: onlineTitle, description: null, location: 'Microsoft Teams', points: 40, approvalMode: 'manual', checkInMode: 'static',
+    rosterOnly: false, maxParticipants: null, startsAt: yesterday.toISOString(), endsAt: new Date(yesterday.getTime() + 3600 * 1000).toISOString(),
+  } })).json();
+  await eventAdmin.request.post(`${base}/api/host/events/${online.id}/status`, { headers, data: { status: 'closed' } });
+  const csv = '﻿employeeNo,name,email\r\nE0101,Taylor Staff,\r\nE0102,田中 太郎,\r\nE0103,陳 志明,\r\nE0106,王 美玲,\r\nE0108,張 雅婷,\r\nE0105,,\r\nE0999,外部講師,\r\n';
+  await eventAdmin.request.post(`${base}/api/host/events/${online.id}/roster/import?replace=true`, {
+    headers, multipart: { file: { name: 'completed.csv', mimeType: 'text/csv', buffer: Buffer.from(csv) } },
+  });
+}
+const showAwardPanel = (page) => page.evaluate(() => {
+  document.querySelector('[data-action="award-roster"]')?.scrollIntoView({ block: 'start' });
+  window.scrollBy(0, -240);
+});
+await shot(eventAdmin, 'host-roster-award', `/host/events/${online.id}?tab=roster`, {
+  before: async (page) => {
+    const award = page.locator('[data-action="award-roster"]');
+    // The button stays disabled until the roster has loaded, and for good once everyone is awarded (a re-run).
+    const ready = await page.waitForFunction(() => document.querySelector('[data-action="award-roster"]')?.disabled === false, null, { timeout: 6000 })
+      .then(() => true, () => false);
+    if (ready) {
+      await award.click();
+      await page.getByRole('dialog').getByRole('button', { name: /發放點數|Award points|ポイントを付与/ }).click();
+      await page.waitForTimeout(1200);
+    }
+    await showAwardPanel(page);
+  },
+});
 // A keyboard-wedge reader "types" the badge number quickly and presses Enter.
 await shot(eventAdmin, 'host-station', `/host/events/${staticEvent.id}?tab=station`, {
   before: async (page) => { await page.locator('body').click({ position: { x: 5, y: 5 } }); await page.keyboard.type('04A23B1C', { delay: 8 }); await page.keyboard.press('Enter'); },

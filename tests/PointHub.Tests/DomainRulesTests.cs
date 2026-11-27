@@ -358,6 +358,70 @@ public class RosterMatcherTests
     }
 }
 
+public class RosterAwardTests
+{
+    private static RosterAwardRow Matched(int id, bool active = true) => new(RosterMatchStatus.Matched, id, active);
+
+    private static readonly Dictionary<int, CheckInStatus> NoCheckIns = [];
+
+    [Fact]
+    public void Awards_new_people_approves_waiting_ones_and_leaves_decided_ones_alone()
+    {
+        RosterAwardRow[] rows =
+        [
+            Matched(1),                                       // completed online, never checked in
+            Matched(2),                                       // checked in by link, waiting for approval
+            Matched(3),                                       // already approved
+            Matched(4),                                       // a host rejected this check-in
+            Matched(5),                                       // points were reverted in the ledger
+            new(RosterMatchStatus.NotFound, null, false),     // not in the employee master yet
+            new(RosterMatchStatus.Duplicate, 1, true),        // listed twice
+            new(RosterMatchStatus.Inactive, 6, false),        // left the company
+            Matched(7, active: false),                        // left after the roster was matched
+        ];
+        var existing = new Dictionary<int, CheckInStatus>
+        {
+            [2] = CheckInStatus.Pending, [3] = CheckInStatus.Approved, [4] = CheckInStatus.Rejected, [5] = CheckInStatus.Reverted,
+        };
+
+        Assert.Equal(
+        [
+            RosterAwardOutcome.Award, RosterAwardOutcome.ApprovePending, RosterAwardOutcome.AlreadyAwarded,
+            RosterAwardOutcome.AlreadyDecided, RosterAwardOutcome.AlreadyDecided, RosterAwardOutcome.NotMatched,
+            RosterAwardOutcome.NotMatched, RosterAwardOutcome.Inactive, RosterAwardOutcome.Inactive,
+        ], RosterAward.Plan(rows, existing, placesLeft: null));
+    }
+
+    [Fact]
+    public void Running_it_again_awards_nobody_twice()
+    {
+        RosterAwardRow[] rows = [Matched(1), Matched(2), Matched(1)];
+        var afterFirstRun = new Dictionary<int, CheckInStatus> { [1] = CheckInStatus.Approved, [2] = CheckInStatus.Approved };
+
+        Assert.Equal([RosterAwardOutcome.Award, RosterAwardOutcome.Award, RosterAwardOutcome.AlreadyAwarded], RosterAward.Plan(rows, NoCheckIns, null));
+        Assert.All(RosterAward.Plan(rows, afterFirstRun, null), outcome => Assert.Equal(RosterAwardOutcome.AlreadyAwarded, outcome));
+    }
+
+    [Fact]
+    public void Respects_the_participant_limit_but_still_approves_people_who_already_hold_a_place()
+    {
+        RosterAwardRow[] rows = [Matched(1), Matched(2), Matched(3), Matched(4)];
+        var existing = new Dictionary<int, CheckInStatus> { [4] = CheckInStatus.Pending };
+
+        Assert.Equal(
+            [RosterAwardOutcome.Award, RosterAwardOutcome.Award, RosterAwardOutcome.EventFull, RosterAwardOutcome.ApprovePending],
+            RosterAward.Plan(rows, existing, placesLeft: 2));
+    }
+
+    [Theory]
+    [InlineData(EventStatus.Draft, false)]
+    [InlineData(EventStatus.Open, true)]
+    [InlineData(EventStatus.Closed, true)]
+    [InlineData(EventStatus.Cancelled, false)]
+    public void Works_while_open_and_after_the_event_is_closed(EventStatus status, bool allowed) =>
+        Assert.Equal(allowed, RosterAward.AllowedFor(status));
+}
+
 public class GiftTests
 {
     [Fact]

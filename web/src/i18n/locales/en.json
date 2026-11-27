@@ -102,7 +102,8 @@
   "checkInMethod": {
     "link": "Link / QR",
     "card": "Card",
-    "manual": "Manual"
+    "manual": "Manual",
+    "roster": "From roster"
   },
   "rosterMatch": {
     "matched": "Matched",
@@ -363,6 +364,30 @@
         "match": "Match",
         "employee": "Employee",
         "checkIn": "Check-in"
+      },
+      "award": {
+        "title": "Award points from this roster",
+        "hint": "For online events, or attendance recorded in another system: import the list of people who completed the event, then give them the points in one go. People who already have their points are skipped, so you can run it again after importing more rows.",
+        "buttonCount_one": "Award {{count}} person",
+        "buttonCount_other": "Award {{count}} people",
+        "button": "Award points",
+        "confirmTitle": "Award points from the roster?",
+        "confirmBody_one": "{{count}} person on the roster gets {{points}} points and an email. Their attendance is recorded as “From roster”.",
+        "confirmBody_other": "{{count}} people on the roster get {{points}} points each and an email. Their attendance is recorded as “From roster”.",
+        "notAllowed": "Open the event, or close it once it has ended, to award points from the roster.",
+        "done_one": "{{count}} person awarded",
+        "done_other": "{{count}} people awarded",
+        "awarded": "Newly awarded",
+        "approvedPending": "Waiting check-ins approved",
+        "alreadyAwarded": "Already had points",
+        "skipped": "Skipped",
+        "more": "…and {{count}} more",
+        "reasons": {
+          "alreadyDecided": "check-in was rejected or its points reverted",
+          "notMatched": "not matched to one employee",
+          "inactive": "has left the company",
+          "eventFull": "the event is full"
+        }
       }
     }
   },

@@ -128,7 +128,7 @@ type Transaction = {
 type EventStatus = 'draft' | 'open' | 'closed' | 'cancelled';
 type ApprovalMode = 'manual' | 'autoApproveRoster' | 'autoApproveAll';
 type CheckInStatus = 'pending' | 'approved' | 'rejected' | 'reverted';
-type CheckInMethod = 'link' | 'card' | 'manual';
+type CheckInMethod = 'link' | 'card' | 'manual' | 'roster';   // roster: awarded from the imported roster
 type CheckInMode = 'static' | 'rotating';   // static: one link per event (posters); rotating: code on the host's screen changes every few seconds
 type EventSummary = {
   id: number; title: LocalizedText; description: LocalizedText | null; location: string | null;
@@ -159,6 +159,7 @@ type CheckIn = {
 | GET | `/api/host/events/{id}/roster` | | `RosterEntry[]` |
 | POST | `/api/host/events/{id}/roster/import?replace=true` | multipart, field `file` (CSV) | `RosterImportResult` |
 | POST | `/api/host/events/{id}/roster/rematch` | | `RosterImportResult` – re-compares the stored roster with the current employee master |
+| POST | `/api/host/events/{id}/roster/award` | | `RosterAwardResult` – records attendance (method `roster`) and awards the event's points for every matched person on the roster; for online events and attendance recorded elsewhere. Allowed while the event is `open` or `closed` (`409 event_not_open` otherwise). Safe to repeat |
 | GET | `/api/host/events/{id}/checkins?status=` | | `CheckIn[]` (newest first) |
 | GET | `/api/host/checkins/pending` | | `CheckIn[]` – everything waiting for approval across the caller's events (all events for a system admin), oldest first, at most 100 |
 | POST | `/api/host/events/{id}/checkins/approve-all` | `{ onlyRoster: boolean }` | `{ approved: number }` |
@@ -191,9 +192,17 @@ type RosterEntry = {
   checkInStatus: CheckInStatus | null;
 };
 type RosterImportResult = { total: number; matched: number; notFound: number; inactive: number; duplicate: number; entries: RosterEntry[] };
+type RosterAwardResult = {
+  awarded: number;          // no check-in yet: attendance recorded, points awarded
+  approvedPending: number;  // waiting self check-ins approved
+  alreadyAwarded: number;   // approved before (or a second row for the same person): left alone
+  skipped: { employeeNo: string; name: string | null; reason: 'alreadyDecided' | 'notMatched' | 'inactive' | 'eventFull' }[];
+};
 ```
 
 Roster CSV: UTF-8 (BOM allowed), header row required, columns `employeeNo` (required), `name`, `email` (optional, any order, case-insensitive header names). Rows are matched to employees by `employeeNo`, then by `email`.
+
+Award from roster: rejected check-ins and reverted awards stay as they are (`alreadyDecided`), `maxParticipants` still applies (`eventFull`; waiting check-ins already hold a place and are approved), and everyone who gets points receives the "check-in approved" email. It is audited as `roster.award`.
 
 ## Gifts
 

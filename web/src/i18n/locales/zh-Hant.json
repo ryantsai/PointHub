@@ -102,7 +102,8 @@
   "checkInMethod": {
     "link": "連結／QR",
     "card": "刷卡",
-    "manual": "手動"
+    "manual": "手動",
+    "roster": "名單匯入"
   },
   "rosterMatch": {
     "matched": "已比對",
@@ -363,6 +364,30 @@
         "match": "比對結果",
         "employee": "員工",
         "checkIn": "報到"
+      },
+      "award": {
+        "title": "依此名單發放點數",
+        "hint": "適用於線上活動，或出席紀錄在其他系統的情況：匯入完成活動的名單，一次發放點數。已經拿到點數的人會自動略過，所以補匯入名單後可以再執行一次。",
+        "buttonCount_one": "發放給 {{count}} 人",
+        "buttonCount_other": "發放給 {{count}} 人",
+        "button": "發放點數",
+        "confirmTitle": "要依名單發放點數嗎？",
+        "confirmBody_one": "名單上的 {{count}} 人將獲得 {{points}} 點並收到電子郵件，出席紀錄的方式會標示為「名單匯入」。",
+        "confirmBody_other": "名單上的 {{count}} 人將各獲得 {{points}} 點並收到電子郵件，出席紀錄的方式會標示為「名單匯入」。",
+        "notAllowed": "請先開放活動報到，或在活動結束後關閉活動，才能依名單發放點數。",
+        "done_one": "已發放給 {{count}} 人",
+        "done_other": "已發放給 {{count}} 人",
+        "awarded": "新發放",
+        "approvedPending": "核准待審核",
+        "alreadyAwarded": "已有點數",
+        "skipped": "略過",
+        "more": "……另有 {{count}} 筆",
+        "reasons": {
+          "alreadyDecided": "報到已被退回，或點數已撤銷",
+          "notMatched": "無法對應到唯一一位員工",
+          "inactive": "已離職",
+          "eventFull": "活動名額已滿"
+        }
       }
     }
   },

@@ -8,6 +8,7 @@ import type {
   EventInput,
   EventStatus,
   EventSummary,
+  RosterAwardResult,
   RosterEntry,
   RosterImportResult,
   RotatingCode,
@@ -122,6 +123,15 @@ export function useRematchRoster(id: number) {
   return useMutation({
     mutationFn: () => api.post<RosterImportResult>(`/api/host/events/${id}/roster/rematch`),
     onSuccess: (result) => storeRoster(qc, id, result),
+  });
+}
+
+/** Records attendance for everyone matched on the roster and awards the points (online events, lists from elsewhere). */
+export function useAwardRoster(id: number) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => api.post<RosterAwardResult>(`/api/host/events/${id}/roster/award`),
+    onSuccess: () => refreshAfterCheckIn(qc, id), // the event key prefixes its roster and check-in lists too
   });
 }
 

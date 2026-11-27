@@ -23,6 +23,13 @@ public sealed class CheckInOptions
     public TimeSpan RotatingPeriod => TimeSpan.FromSeconds(Math.Max(5, RotatingPeriodSeconds));
 }
 
+public sealed record RosterAwardSkip(string EmployeeNo, string? Name, RosterAwardOutcome Reason);
+
+/// <param name="Awarded">New attendance recorded and points awarded.</param>
+/// <param name="ApprovedPending">Waiting self check-ins that were approved.</param>
+/// <param name="AlreadyAwarded">Already approved before; left alone.</param>
+public sealed record RosterAwardSummary(int Awarded, int ApprovedPending, int AlreadyAwarded, IReadOnlyList<RosterAwardSkip> Skipped);
+
 public sealed class CheckInService(PointHubDbContext db, PointLedger ledger, EmailService email, TimeProvider clock, IOptions<CheckInOptions> options)
 {
     private static readonly CheckInStatus[] CountsTowardsCapacity = [CheckInStatus.Pending, CheckInStatus.Approved];
@@ -97,6 +104,69 @@ public sealed class CheckInService(PointHubDbContext db, PointLedger ledger, Ema
         db.Audit(hostId, "checkin.approve-all", nameof(Event), ev.Id, $"{pending.Count} approved (roster only: {onlyRoster})", clock);
         await db.SaveChangesAsync(ct);
         return pending.Count;
+    }
+
+    /// <summary>
+    /// Records attendance for every matched person on the roster and awards the points: for events whose attendance
+    /// is known from elsewhere, such as an online session's completion list. Safe to run again after a re-import or
+    /// re-match; people already approved are left alone. Everyone awarded gets the "check-in approved" email.
+    /// </summary>
+    public async Task<RosterAwardSummary> AwardRosterAsync(Event ev, int hostId, CancellationToken ct)
+    {
+        if (!RosterAward.AllowedFor(ev.Status))
+            throw new DomainException(ErrorCodes.EventNotOpen, "Open the event, or close it after it has ended, before awarding points from the roster.");
+
+        var roster = await db.RosterEntries.Include(r => r.Employee)
+            .Where(r => r.EventId == ev.Id).OrderBy(r => r.Id).ToListAsync(ct);
+        var checkIns = await db.CheckIns.Include(c => c.Event).Include(c => c.Employee)
+            .Where(c => c.EventId == ev.Id).ToDictionaryAsync(c => c.EmployeeId, ct);
+        int? placesLeft = ev.MaxParticipants is { } max
+            ? Math.Max(0, max - checkIns.Values.Count(c => CountsTowardsCapacity.Contains(c.Status)))
+            : null;
+
+        var plan = RosterAward.Plan(
+            roster.Select(r => new RosterAwardRow(r.MatchStatus, r.EmployeeId, r.Employee?.IsActive ?? false)).ToList(),
+            checkIns.ToDictionary(pair => pair.Key, pair => pair.Value.Status),
+            placesLeft);
+
+        var now = clock.GetUtcNow();
+        var skipped = new List<RosterAwardSkip>();
+        int awarded = 0, approved = 0, already = 0;
+        for (var i = 0; i < roster.Count; i++)
+        {
+            var entry = roster[i];
+            switch (plan[i])
+            {
+                case RosterAwardOutcome.Award:
+                    var checkIn = new EventCheckIn
+                    {
+                        Event = ev, EmployeeId = entry.Employee!.Id, Employee = entry.Employee,
+                        Method = CheckInMethod.Roster, OnRoster = true, CheckedInAt = now,
+                    };
+                    db.CheckIns.Add(checkIn);
+                    await ApproveAndAwardAsync(checkIn, hostId, ct);
+                    await NotifyAsync(EmailTemplates.CheckInApproved, checkIn, reason: null, ct);
+                    awarded++;
+                    break;
+                case RosterAwardOutcome.ApprovePending:
+                    var pending = checkIns[entry.EmployeeId!.Value];
+                    await ApproveAndAwardAsync(pending, hostId, ct);
+                    await NotifyAsync(EmailTemplates.CheckInApproved, pending, reason: null, ct);
+                    approved++;
+                    break;
+                case RosterAwardOutcome.AlreadyAwarded:
+                    already++;
+                    break;
+                default:
+                    skipped.Add(new RosterAwardSkip(entry.EmployeeNo, entry.Name ?? entry.Employee?.DisplayName, plan[i]));
+                    break;
+            }
+        }
+
+        db.Audit(hostId, "roster.award", nameof(Event), ev.Id,
+            $"{awarded} awarded, {approved} pending approved, {already} already awarded, {skipped.Count} skipped", clock);
+        await db.SaveChangesAsync(ct);
+        return new RosterAwardSummary(awarded, approved, already, skipped);
     }
 
     public async Task RejectAsync(EventCheckIn checkIn, int hostId, string? reason, CancellationToken ct)

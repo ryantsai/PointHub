@@ -27,7 +27,8 @@ public enum CheckInMode
 
 public enum CheckInStatus { Pending = 0, Approved = 1, Rejected = 2, Reverted = 3 }
 
-public enum CheckInMethod { Link = 0, Card = 1, Manual = 2 }
+/// <summary>Roster: a host awarded points to the imported roster (attendance recorded elsewhere, e.g. an online event).</summary>
+public enum CheckInMethod { Link = 0, Card = 1, Manual = 2, Roster = 3 }
 
 public enum RosterMatchStatus { Matched = 0, NotFound = 1, Inactive = 2, Duplicate = 3 }
 

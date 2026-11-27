@@ -97,6 +97,12 @@ public static class HostEndpoints
             return Results.Ok(RosterImportResultDto.From(await RosterAsync(db, id, ct)));
         });
 
+        // Attendance recorded elsewhere (an online event's completion list): award everyone matched on the roster.
+        group.MapPost("/events/{id:int}/roster/award", async (int id, ClaimsPrincipal user, PointHubDbContext db, CheckInService checkIns, CancellationToken ct) =>
+            await Hosted(db, user).FirstOrDefaultAsync(e => e.Id == id, ct) is { } ev
+                ? Results.Ok(await checkIns.AwardRosterAsync(ev, user.EmployeeId(), ct))
+                : ApiProblem.NotFound("Event"));
+
         group.MapGet("/events/{id:int}/checkins", async (int id, string? status, ClaimsPrincipal user, PointHubDbContext db, CancellationToken ct) =>
         {
             var filter = QueryEnum.Parse<CheckInStatus>(status);

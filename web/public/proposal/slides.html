@@ -96,7 +96,7 @@
             <article class="pillar panel a pop" style="--i:2">
               <span class="badge-icon"><svg><use href="#i-calendar"/></svg></span>
               <h3>參加活動</h3>
-              <p>活動管理員建立活動並設定點數；員工以 QR Code、員工證感應或人工輸入報到。</p>
+              <p>活動管理員建立活動並設定點數；員工以 QR Code、員工證或人工輸入報到，線上活動可匯入完成名單。</p>
             </article>
             <article class="pillar panel a pop" style="--i:3">
               <span class="badge-icon green"><svg><use href="#i-coin"/></svg></span>
@@ -126,7 +126,7 @@
             <div class="track a" style="--i:2" aria-hidden="true"><i class="track-fill"></i><i class="token">★</i></div>
             <ol>
               <li class="step a" style="--i:2;--s:0"><span class="step-dot"><svg><use href="#i-calendar"/></svg></span><h3>建立活動</h3><p>設定點數、人數上限、報到與審核方式</p></li>
-              <li class="step a" style="--i:3;--s:1"><span class="step-dot"><svg><use href="#i-qr"/></svg></span><h3>員工報到</h3><p>掃描 QR Code、感應員工證或人工輸入</p></li>
+              <li class="step a" style="--i:3;--s:1"><span class="step-dot"><svg><use href="#i-qr"/></svg></span><h3>員工報到</h3><p>QR Code、員工證、人工輸入或匯入名單</p></li>
               <li class="step a" style="--i:4;--s:2"><span class="step-dot"><svg><use href="#i-check"/></svg></span><h3>審核入帳</h3><p>人工、名單內自動或全部自動核准</p></li>
               <li class="step a" style="--i:5;--s:3"><span class="step-dot"><svg><use href="#i-gift"/></svg></span><h3>兌換禮品</h3><p>即時扣點並保留該項禮品</p></li>
               <li class="step a" style="--i:6;--s:4"><span class="step-dot"><svg><use href="#i-mail"/></svg></span><h3>發放通知</h3><p>標記已發放，寄送電子郵件</p></li>
@@ -147,7 +147,7 @@
             </article>
             <article class="role panel a pop" style="--i:3;--c:#4f8a12;--t:#edf6e1">
               <header><span class="badge-icon green"><svg><use href="#i-calendar"/></svg></span><h3>活動管理員</h3></header>
-              <ul><li>建立活動、設定點數</li><li>QR Code、刷卡站、人工輸入</li><li>審核報到、匯入名單</li></ul>
+              <ul><li>建立活動、設定點數</li><li>QR Code、刷卡站、人工輸入</li><li>審核報到、依名單發放</li></ul>
               <small>只看得到自己的活動</small>
             </article>
             <article class="role panel a pop" style="--i:4;--c:#a8650f;--t:#fbf1de">
@@ -264,7 +264,63 @@
           </ul>
         </section>
 
-        <!-- 8 ─ Employee experience -->
+        <!-- 8 ─ Event admin: online events -->
+        <section class="slide s-online" data-title="線上活動">
+          <p class="kicker a" style="--i:0">07　活動管理員・線上活動</p>
+          <h2 class="title a" style="--i:1">線上活動：結束後匯入完成名單，一次發放</h2>
+          <ol class="online4">
+            <li class="ocard panel a pop" style="--i:2">
+              <header><span class="ono">1</span><span class="badge-icon"><svg><use href="#i-globe"/></svg></span></header>
+              <div class="omini report" aria-hidden="true">
+                <span style="--r:0"><svg><use href="#i-check"/></svg>Taylor Staff<em>100%</em></span>
+                <span style="--r:1"><svg><use href="#i-check"/></svg>田中 太郎<em>100%</em></span>
+                <span style="--r:2"><svg><use href="#i-check"/></svg>陳 志明<em>100%</em></span>
+                <b class="csv"><svg><use href="#i-export"/></svg>完成名單.csv</b>
+              </div>
+              <h3>線上平台匯出名單</h3>
+              <p>視訊會議、線上課程或問卷工具的完成紀錄，只要有員工編號或電子郵件。</p>
+            </li>
+            <li class="ocard panel a pop" style="--i:3">
+              <header><span class="ono">2</span><span class="badge-icon green"><svg><use href="#i-users"/></svg></span></header>
+              <div class="omini" aria-hidden="true">
+                <ul class="match">
+                  <li class="m-ok" style="--m:0;--w:90%"><span>符合</span><i><b></b></i><em data-count="5" data-delay="2300">0</em></li>
+                  <li class="m-miss" style="--m:1;--w:20%"><span>查無此人</span><i><b></b></i><em data-count="1" data-delay="2450">0</em></li>
+                  <li class="m-off" style="--m:2;--w:20%"><span>已離職</span><i><b></b></i><em data-count="1" data-delay="2600">0</em></li>
+                </ul>
+              </div>
+              <h3>匯入成參加名單</h3>
+              <p>逐列比對員工主檔；新進員工加入後可重新比對。</p>
+            </li>
+            <li class="ocard panel a pop" style="--i:4">
+              <header><span class="ono">3</span><span class="badge-icon gold"><svg><use href="#i-coin"/></svg></span></header>
+              <div class="omini" aria-hidden="true">
+                <span class="fake-btn"><svg><use href="#i-check"/></svg>發放給 5 人</span>
+                <svg class="cursor" viewBox="0 0 24 24"><path d="M5 3l13 8-6 1.5L9 19Z"/></svg>
+              </div>
+              <h3>依此名單發放點數</h3>
+              <p>一個按鈕：記錄出席（名單匯入）並發放活動的點數。</p>
+            </li>
+            <li class="ocard panel a pop" style="--i:5">
+              <header><span class="ono">4</span><span class="badge-icon violet"><svg><use href="#i-mail"/></svg></span></header>
+              <div class="omini toasts" aria-hidden="true">
+                <span style="--r:0"><b>+40</b>Taylor Staff<svg><use href="#i-mail"/></svg></span>
+                <span style="--r:1"><b>+40</b>田中 太郎<svg><use href="#i-mail"/></svg></span>
+                <span style="--r:2"><b>+40</b>陳 志明<svg><use href="#i-mail"/></svg></span>
+              </div>
+              <h3>入帳並通知</h3>
+              <p>點數寫入點數帳本，每個人收到電子郵件；略過的列附上原因。</p>
+            </li>
+          </ol>
+          <ul class="chips a" style="--i:7">
+            <li><svg><use href="#i-refresh"/></svg>可重複執行，不會重複發放</li>
+            <li><svg><use href="#i-list"/></svg>先報到而待審核的人一併核准</li>
+            <li><svg><use href="#i-clock"/></svg>活動結束後也能發放</li>
+            <li><svg><use href="#i-eye"/></svg>每次發放都記入稽核紀錄</li>
+          </ul>
+        </section>
+
+        <!-- 9 ─ Employee experience -->
         <section class="slide s-employee" data-title="員工的使用體驗">
           <div class="cols">
             <div class="phone-wrap a right" style="--i:1">
@@ -273,7 +329,7 @@
               <div class="confetti" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
             </div>
             <div class="stack">
-              <p class="kicker a" style="--i:0">07　一般員工</p>
+              <p class="kicker a" style="--i:0">08　一般員工</p>
               <h2 class="title a" style="--i:1">一頁看完自己的點數</h2>
               <ul class="checks">
                 <li class="panel a" style="--i:2"><svg><use href="#i-coin"/></svg><span><b>等級圓環</b>隨著接近下一份好禮逐漸填滿</span></li>
@@ -294,7 +350,7 @@
               <div class="theme-stack"></div>
             </figure>
             <div class="stack">
-              <p class="kicker a" style="--i:0">08　畫面設計</p>
+              <p class="kicker a" style="--i:0">09　畫面設計</p>
               <h2 class="title a" style="--i:1">節慶到了，網站自動換裝</h2>
               <p class="lead a" style="--i:2">依台灣節慶行事曆自動切換配色、像素風圖案與背景動畫。農曆節日由系統逐年計算，不需要維護時程表。</p>
               <ul class="festivals a" style="--i:3"></ul>
@@ -307,7 +363,7 @@
         <section class="slide s-gifts" data-title="禮品兌換與發放">
           <div class="cols">
             <div class="stack">
-              <p class="kicker a" style="--i:0">09　禮品</p>
+              <p class="kicker a" style="--i:0">10　禮品</p>
               <h2 class="title a" style="--i:1">同一份禮品，<br>不會承諾給兩個人</h2>
               <ul class="ticks">
                 <li class="a" style="--i:2"><svg><use href="#i-check"/></svg>點數足夠</li>
@@ -340,7 +396,7 @@
 
         <!-- 11 ─ Ledger -->
         <section class="slide s-ledger" data-title="點數帳本">
-          <p class="kicker a" style="--i:0">10　點數帳本</p>
+          <p class="kicker a" style="--i:0">11　點數帳本</p>
           <h2 class="title a" style="--i:1">每一筆都對得上，誰做的也看得出</h2>
           <div class="cols ledger-cols">
             <div class="ledger panel a" style="--i:2" role="table" aria-label="點數帳本（示意資料）">
@@ -365,7 +421,7 @@
         <section class="slide s-admin" data-title="管理介面">
           <div class="cols">
             <div class="stack">
-              <p class="kicker a" style="--i:0">11　管理介面</p>
+              <p class="kicker a" style="--i:0">12　管理介面</p>
               <h2 class="title a" style="--i:1">全貌一目了然</h2>
               <ul class="checks compact">
                 <li class="panel a" style="--i:2"><svg><use href="#i-chart"/></svg><span><b>總覽</b>本月發放與兌換、參與率、近 12 週趨勢</span></li>
@@ -389,7 +445,7 @@
 
         <!-- 13 ─ Integration API: who can connect -->
         <section class="slide s-api" data-title="開放 API">
-          <p class="kicker a" style="--i:0">12　擴充性</p>
+          <p class="kicker a" style="--i:0">13　擴充性</p>
           <h2 class="title a" style="--i:1">開放 API：讓其他系統也用得上點數</h2>
           <div class="cols api-cols">
             <svg class="hub a zoom" style="--i:2" viewBox="0 0 460 330" role="img" aria-label="PointHub 整合 API 連接人資系統、員工餐廳與販賣機、問卷工具，以及未來的其他系統。">
@@ -431,7 +487,7 @@
 
         <!-- 14 ─ Integration API: how a call works -->
         <section class="slide s-apicall" data-title="API 串接方式">
-          <p class="kicker a" style="--i:0">13　串接方式</p>
+          <p class="kicker a" style="--i:0">14　串接方式</p>
           <h2 class="title a" style="--i:1">一個請求完成扣點，重送也不會重複</h2>
           <div class="cols call-cols">
             <div class="code a left" style="--i:2">
@@ -460,7 +516,7 @@
 
         <!-- 15 ─ Architecture -->
         <section class="slide s-arch" data-title="系統架構">
-          <p class="kicker a" style="--i:0">14　系統架構</p>
+          <p class="kicker a" style="--i:0">15　系統架構</p>
           <h2 class="title a" style="--i:1">只需部署一個應用程式</h2>
           <svg class="arch a" style="--i:2" viewBox="0 0 900 300" role="img" aria-label="員工的手機與電腦、活動刷卡站、其他系統連到 IIS 上的 PointHub；PointHub 使用 Microsoft Entra ID 登入、SQL Server、禮品圖片資料夾與公司 SMTP 伺服器。">
             <g class="wires">
@@ -501,10 +557,10 @@
         <!-- 16 ─ Next steps -->
         <section class="slide s-next" data-title="下一步">
           <div class="sparkles" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
-          <p class="kicker a" style="--i:0">15　下一步</p>
+          <p class="kicker a" style="--i:0">16　下一步</p>
           <h2 class="title big a" style="--i:1">一起把細節定下來</h2>
           <ol class="next3">
-            <li class="panel a pop" style="--i:2"><b>1</b><span><strong>檢視畫面與流程</strong>每個角色的畫面與八張作業流程圖</span></li>
+            <li class="panel a pop" style="--i:2"><b>1</b><span><strong>檢視畫面與流程</strong>每個角色的畫面與九張作業流程圖</span></li>
             <li class="panel a pop" style="--i:3"><b>2</b><span><strong>決定待決事項</strong>共 <em data-decisions>19</em> 項，可在提案頁直接選擇方案</span></li>
             <li class="panel a pop" style="--i:4"><b>3</b><span><strong>確認上線條件</strong>登入方式、手機如何連到網站、要串接哪些系統</span></li>
           </ol>

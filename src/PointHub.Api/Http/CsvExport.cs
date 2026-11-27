@@ -109,6 +109,7 @@ public static class ExportLabels
         ["Link"] = ("QR / link", "QR / リンク", "QR／連結"),
         ["Card"] = ("Card tap", "カードタッチ", "刷卡"),
         ["Manual"] = ("Manual", "手入力", "人工輸入"),
+        ["Roster"] = ("From roster", "名簿から一括", "名單匯入"),
         ["systemAdmin"] = ("System admin", "システム管理者", "系統管理員"),
         ["eventAdmin"] = ("Event admin", "イベント管理者", "活動管理員"),
         ["giftAdmin"] = ("Gift admin", "ギフト管理者", "禮品管理員"),
