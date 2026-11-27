@@ -7,7 +7,7 @@ This is the contract between `src/PointHub.Api` and `web/`. Change it here first
 - Base path `/api`. JSON, camelCase property names, enums as camelCase strings.
 - Timestamps are ISO 8601 with an explicit offset, always UTC (`2026-11-24T03:00:00+00:00`). The client renders them in the browser's time zone.
 - Enum values in query strings (`?status=pending`) are matched case-insensitively.
-- Auth is a same-origin HTTP-only cookie. Unauthenticated calls get `401`, forbidden calls `403` (never a redirect).
+- Auth is a same-origin HTTP-only cookie. Unauthenticated calls get `401`, forbidden calls `403` (never a redirect). Only that cookie counts: an identity the server attaches by itself (the Windows account under IIS) never authenticates a call; in Windows mode it is read once, by `/api/auth/login`, to start the session.
 - State-changing requests must send the header `X-Requested-With: PointHub` (cheap CSRF guard; the API rejects them with `400 csrf_header_missing` otherwise).
 - Errors are RFC 7807 `application/problem+json` with a stable machine-readable `code`. The client translates `code`; `title` is English and for logs only.
 - Paging: `?page=1&pageSize=50` (max 200) returns `Paged<T>`.

@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Negotiate;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using PointHub.Domain.Employees;
 using PointHub.Domain.Integration;
@@ -166,12 +167,33 @@ public static class AuthSetup
                 .RequireClaim(ApiKeyAuthenticationHandler.ScopeClaim, ScopeName.PointsWrite))
             .AddPolicy(Policies.IntegrationEmployees, p => p.AddAuthenticationSchemes(ApiKeyAuthenticationHandler.SchemeName)
                 .RequireClaim(ApiKeyAuthenticationHandler.ScopeClaim, ScopeName.EmployeesWrite))
-            .AddPolicy(Policies.EventAdmin, p => p.RequireRole(RoleName.EventAdmin, RoleName.SystemAdmin))
-            .AddPolicy(Policies.GiftAdmin, p => p.RequireRole(RoleName.GiftAdmin, RoleName.SystemAdmin))
-            .AddPolicy(Policies.SystemAdmin, p => p.RequireRole(RoleName.SystemAdmin))
-            .AddPolicy(Policies.AdminRead, p => p.RequireRole(RoleName.SystemAdmin, RoleName.Auditor))
-            .AddPolicy(Policies.ClaimsRead, p => p.RequireRole(RoleName.GiftAdmin, RoleName.SystemAdmin, RoleName.Auditor));
+            // Employee and admin endpoints accept only PointHub's own session cookie. Any other identity on the
+            // request (IIS puts the Windows account there whenever the browser sends Windows credentials) gets a
+            // 401, so the web app starts a sign-in instead of an endpoint failing on a missing employee id.
+            .SetDefaultPolicy(SessionPolicy().Build())
+            .AddPolicy(Policies.EventAdmin, SessionPolicy(RoleName.EventAdmin, RoleName.SystemAdmin).Build())
+            .AddPolicy(Policies.GiftAdmin, SessionPolicy(RoleName.GiftAdmin, RoleName.SystemAdmin).Build())
+            .AddPolicy(Policies.SystemAdmin, SessionPolicy(RoleName.SystemAdmin).Build())
+            .AddPolicy(Policies.AdminRead, SessionPolicy(RoleName.SystemAdmin, RoleName.Auditor).Build())
+            .AddPolicy(Policies.ClaimsRead, SessionPolicy(RoleName.GiftAdmin, RoleName.SystemAdmin, RoleName.Auditor).Build());
+
+        // Belt and braces for IIS: never let the server put the Windows account on HttpContext.User by itself.
+        // /api/auth/login still asks for it explicitly (Negotiate defers to IIS) to establish the session.
+        services.Configure<IISServerOptions>(iis => iis.AutomaticAuthentication = false); // in-process hosting
+        services.Configure<IISOptions>(iis => iis.AutomaticAuthentication = false);       // out-of-process hosting
         return services;
+    }
+
+    /// <summary>
+    /// A signed-in employee: authenticated by the session cookie (not whatever else is on the request) and carrying
+    /// the employee id that every endpoint reads, plus one of <paramref name="roles"/> when any are given.
+    /// </summary>
+    public static AuthorizationPolicyBuilder SessionPolicy(params string[] roles)
+    {
+        var policy = new AuthorizationPolicyBuilder(CookieAuthenticationDefaults.AuthenticationScheme)
+            .RequireAuthenticatedUser()
+            .RequireClaim(ClaimTypes.NameIdentifier);
+        return roles.Length > 0 ? policy.RequireRole(roles) : policy;
     }
 
     /// <summary>The cookie identity: employee id, display name and roles. Nothing else is trusted from the cookie.</summary>

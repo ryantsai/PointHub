@@ -115,6 +115,7 @@ Things to know about Windows mode:
 - Matching is by the account's `mail` and `employeeID`. Check that these are filled in Active Directory, or set `EmailDomain` if mailbox names equal logon names.
 - People scanning a QR code with a personal phone get a browser prompt for domain credentials. If check-in from phones matters, prefer Entra ID, or use badge taps.
 - Signing out of PointHub ends the PointHub session only; on a domain PC the next visit signs the same person in again.
+- The Windows identity is used in exactly one place: `/api/auth/login` reads it to start a PointHub session. Every other endpoint accepts only the PointHub session cookie, and the app turns IIS's automatic authentication off, so a request that carries Windows credentials but no valid session (expired, signed out, or a cookie the browser refused) gets `401` and the web app starts a new sign-in. If people come back to the sign-in page right after signing in, check that the site is reached over HTTPS: the session cookie is `Secure`, so over plain HTTP the browser drops it.
 - To try it without IIS on a Windows PC: `Auth__Mode=Windows` and `Auth__Windows__EmailDomain=<something>` as environment variables, then `dotnet run --project src/PointHub.Api`; Kestrel does the handshake itself.
 
 ### Data protection keys
